@@ -119,43 +119,37 @@ export default function NewSentiSheetWithPreview() {
 
 const onSubmit = async (data) => {
   try {
-    setSubmitError('');
-    
-    let { data: { session } } = await supabase.auth.getSession();
-    console.log('Initial session:', !!session?.user);
-    
-    if (!session?.user) {
-      console.log('Signing in anonymously...');
-      const { data: authData, error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        console.error('Anonymous sign-in failed:', error);
-        setSubmitError(error.message);
-        return;
+    setSubmitError(''); //clear any previous errors
+    const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) { //supabase errors don't throw, they return errors 
+          console.error('Anonymous sign-in failed:', error);
+          setSubmitError(error.message);
+        }
       }
-      
-      // Wait a moment for cookies to be set
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const { data: { session: newSession } } = await supabase.auth.getSession();
-      session = newSession;
-      console.log('New session after anonymous sign-in:', !!session?.user);
-    }
-
-    // Debug: Log what cookies are being sent
-    console.log('Document cookies:', document.cookie);
-
     const formData = new FormData();
-    // ... your form data setup
+    formData.append('file', data.file[0]);
+    formData.append('textColumn', data.textColumn);
+    formData.append('sentimentClassification', data.sentimentClassification);
+    if (selectedSheet) formData.append('sheetName', selectedSheet);
 
     const response = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
-      credentials: 'include', // ← Add this to ensure cookies are sent
     });
 
-    // ... rest of your code
+    if (!response.ok) { //since throw new Error() should have a error property
+      const errorData = await response.json();
+      const errorMessage = errorData.error || `HTTP ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    router.push(`/sentisheet/${result.id}`);
+    
   } catch (error) {
-    setSubmitError(error.message);
+    setSubmitError(error.message); // Display to user
   }
 };
 

@@ -1,8 +1,7 @@
 // pages/sentisheet/[id].js
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import fs from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
 
 //saves previously stored sentisheets
 
@@ -337,21 +336,18 @@ export async function getServerSideProps({ params }) { //Dynamic route: params c
   }
 
   try {
-    const resultsPath = path.join(process.cwd(), 'results', `${id}.json`); //sentiment-analysis.ai/results/<id>.json
-
-    if (!fs.existsSync(resultsPath)) {
+    const {data, error} = await supabase.from('sentisheets').select('*').eq('id', id).single();
+    if (error || !data) {
       return {
         props: {
-          error: 'Results not found. The analysis may have expired or the ID is incorrect.'
+          error: 'Failed to load results. The analysis may have expired or the ID is incorrect.'
         }
       };
     }
 
-    const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
-
     return {
       props: {
-        results
+        results: data
       }
     };
   } catch (error) {

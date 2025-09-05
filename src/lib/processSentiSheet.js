@@ -5,6 +5,8 @@ import XLSX from 'xlsx';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleGenAI } from '@google/genai';
+import { supabase } from '@/lib/supabase';
+
 
 // =============================================================================
 // UTILITY FUNCTIONS
@@ -101,6 +103,157 @@ function createExcelWithSentiment(originalData, sentimentResults, fileBuffer, sh
   });
   
   return buffer;
+}
+
+function estimateTokenUsage(columnData, sentimentClassification) {
+  // Calculate the fixed prompt template size
+  const sentimentOptions = {
+    'Basic': {
+      options: ['1: Positive', '2: Neutral', '3: Negative'],
+      description: 'basic sentiment'
+    },
+    'Granular': {
+      options: ['1: Very Positive', '2: Positive', '3: Neutral', '4: Negative', '5: Very Negative'],
+      description: 'granular sentiment'
+    },
+    'Dr.Ekman': {
+      options: ['1: Anger', '2: Disgust', '3: Fear', '4: Happiness', '5: Sadness', '6: Surprise'],
+      description: 'emotion according to Dr. Ekman\'s six basic emotions'
+    }
+  };
+
+  const config = sentimentOptions[sentimentClassification];
+  
+  // Calculate fixed template tokens (the parts that don't change)
+  const templateStart = `Classify the ${config.description} for each text. Answer only with an array of the corresponding numbers:\n\n`;
+  const templateOptions = config.options.join('\n');
+  const templateMiddle = '\n\nHere is the list of texts to analyze:\n\n';
+  const templateEnd = '\n\nResponse format: [number, number, number, ...]';
+  
+  const fixedTemplate = templateStart + templateOptions + templateMiddle + templateEnd;
+  const fixedTemplateTokens = Math.ceil(fixedTemplate.length / 4);
+  
+  // Calculate variable content tokens (the actual text data)
+  const textContentTokens = columnData.reduce((sum, item) => {
+    // Account for the numbering format: "1. "text""
+    const itemWithFormatting = `${item.rowIndex}. "${item.text}"`;
+    return sum + Math.ceil(itemWithFormatting.length / 4);
+  }, 0);
+  
+  // Calculate how many batches we'll need
+  const batches = createBatches(columnData);
+  const totalBatches = batches.length;
+  
+  // Total input tokens = (fixed template × number of batches) + all text content
+  const totalInputTokens = (fixedTemplateTokens * totalBatches) + textContentTokens;
+  
+  // Response tokens are very predictable: [1, 2, 3, ...] format
+  // Each number + comma + space ≈ 1 token, plus brackets
+  const avgResponseTokensPerBatch = Math.ceil(batches.reduce((sum, batch) => sum + batch.length, 0) / totalBatches) + 2; // +2 for brackets
+  const totalResponseTokens = avgResponseTokensPerBatch * totalBatches;
+  
+  const estimatedTotalTokens = totalInputTokens + totalResponseTokens;
+  console.log(`Estimated token usage: ${estimatedTotalTokens} tokens (${totalInputTokens} input + ${totalResponseTokens} output)`);
+  return estimatedTotalTokens;
+}
+
+// src/lib/processSentiSheet.js
+async function checkDailyUsage(userId, estimatedTokens, supabase) {
+  try {
+    // Try to get existing user, if they don't exist, create them
+    const { data: users, error } = await supabase
+      .from('users')
+      .upsert({ 
+        id: userId, 
+        daily_usage_count: 0,
+        subscription_id: null
+      }, { 
+        onConflict: 'id',
+        ignoreDuplicates: true // Don't overwrite existing users
+      })
+      .select('daily_usage_count, subscription_id')
+      .single();
+
+    if (error) {
+      console.error('Upsert failed, trying select only:', error);
+      // Fallback: try to select the user that might have been created by another request
+      const { data: fallbackUsers, error: selectError } = await supabase
+        .from('users')
+        .select('daily_usage_count, subscription_id')
+        .eq('id', userId)
+        .single();
+      
+      if (selectError) {
+        // If still failing, assume user doesn't exist and they have 0 usage
+        console.warn('User not found in users table, assuming 0 usage');
+        const currentUsage = 0;
+        return checkLimitsAndReturn(currentUsage, estimatedTokens);
+      }
+      
+      return checkLimitsAndReturn(
+        fallbackUsers.daily_usage_count || 0, 
+        estimatedTokens, 
+        fallbackUsers.subscription_id
+      );
+    }
+
+    const currentUsage = users.daily_usage_count || 0;
+    return checkLimitsAndReturn(currentUsage, estimatedTokens, users.subscription_id);
+    
+  } catch (error) {
+    console.error('Usage check failed:', error);
+    throw new Error(`Usage check failed: ${error.message}`);
+  }
+}
+
+// Helper function to check limits and return usage info
+function checkLimitsAndReturn(currentUsage, estimatedTokens, subscriptionId = null) {
+  // Determine user limits based on subscription
+  const isAnonymous = !subscriptionId; // No subscription = anonymous/free
+  const dailyLimit = isAnonymous ? 25000 : 250000;
+  
+  const totalAfterProcessing = currentUsage + estimatedTokens;
+  
+  if (totalAfterProcessing > dailyLimit) {
+    throw new Error(`Daily token limit exceeded. Current usage: ${currentUsage}, Estimated tokens needed: ${estimatedTokens}, Daily limit: ${dailyLimit}`);
+  }
+  
+  return {
+    currentUsage,
+    estimatedTokens,
+    totalAfterProcessing,
+    dailyLimit,
+    remainingTokens: dailyLimit - currentUsage
+  };
+}
+
+async function updateDailyUsage(userId, tokensUsed, supabase) {
+  try {
+    // Get current usage first
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('daily_usage_count')
+      .eq('id', userId)
+      .single();
+
+    const newUsage = (currentUser?.daily_usage_count || 0) + tokensUsed;
+
+    // Update with the new total
+    const { error } = await supabase
+      .from('users')
+      .update({
+        daily_usage_count: newUsage
+      })
+      .eq('id', userId)
+
+    if (error) {
+      console.error('Failed to update usage:', error);
+    } else {
+      console.log(`Updated usage for user ${userId}: ${newUsage} tokens`);
+    }
+  } catch (error) {
+    console.error('Usage update failed:', error);
+  }
 }
 
 // =============================================================================
@@ -345,42 +498,63 @@ async function processBatch(batch, model, sentimentClassification) {
 
 async function callAIModel(prompt, model) {
   console.log('Calling AI model:', model);
+  console.log('Prompt:', prompt);
   
+  // Use the newer Google GenAI API
   if (model.includes('gemini')) {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY environment variable not set');
     }
     
     try {
-      const ai = new GoogleGenAI(process.env.GEMINI_API_KEY); // ✅ Pass key directly
-      const genModel = ai.getGenerativeModel({ model: 'gemini-2.5-flash-lite' }); // ✅ Get model first
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
-      // ✅ Correct API format
-      const response = await genModel.generateContent({
-        contents: [{
-          role: 'user',
-          parts: [{ text: prompt }]
-        }],
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-lite',
+        contents: prompt,
         generationConfig: {
-          temperature: 0,
+          temperature: 0,  // Match Google AI Studio setting
           topP: 1,
           topK: 1,
           maxOutputTokens: 1000
         }
       });
       
-      // ✅ Proper response extraction
-      const text = response.response.text();
-      console.log('AI Response:', text);
-      return text;
+      console.log('Raw AI Response:', response);
       
+      // Extract the actual text content from the response
+      const textContent = response?.text;
+
+
+      console.log('Extracted text:', textContent);
+      const tokenUsage = response?.usageMetadata.totalTokenCount;
+
+      return textContent;
+
+
     } catch (error) {
       console.error('Gemini API error:', error);
       throw new Error(`Gemini API failed: ${error.message}`);
     }
+  } else {
+    // For testing purposes, return a mock response
+    console.log('⚠️  Using mock response for testing - implement actual AI model calls');
+    
+    // Count how many texts we need to analyze (count the numbered items in prompt)
+    const textCount = (prompt.match(/\d+\. "/g) || []).length;
+    
+    // Determine the max number based on sentiment type from prompt
+    let maxNumber = 3; // Default for Basic
+    if (prompt.includes('Very Positive')) maxNumber = 5; // Granular
+    if (prompt.includes('Surprise')) maxNumber = 6; // Dr.Ekman
+    
+    // Return mock array of random sentiment numbers for testing
+    const mockNumbers = Array.from({ length: textCount }, () => 
+      Math.floor(Math.random() * maxNumber) + 1
+    );
+    
+    return `[${mockNumbers.join(', ')}]`;
   }
-  
-  // Mock response for testing...
 }
 
 function parseAIResponse(response, expectedCount, sentimentClassification) {
@@ -465,7 +639,7 @@ function parseAIResponse(response, expectedCount, sentimentClassification) {
   }
 }
 
-async function performSentimentAnalysis(columnData, model, sentimentClassification, onProgress) {
+async function performSentimentAnalysis(columnData, model, sentimentClassification) {
   const batches = createBatches(columnData);
   const allResults = new Array(columnData.length); // Pre-allocate array to track positions
   let totalTokensUsed = 0;
@@ -492,15 +666,6 @@ async function performSentimentAnalysis(columnData, model, sentimentClassificati
       totalTokensUsed += batchTokens;
       
       currentIndex += batch.length;
-      
-      // // When we call onProgress here:
-      // if (onProgress) {
-      //     onProgress({
-      //       current: i + 1,
-      //       total: batches.length,
-      //       percentage: ((i + 1) / batches.length) * 100
-      //     });
-      // }
 
     } catch (error) {
       console.error(`Batch ${i + 1} failed:`, error);
@@ -614,26 +779,22 @@ function calculateCost(tokens, model) {
 // =============================================================================
 
 async function createOutputFile(parsedResult, analysisResults, originalFile, sheetName, model) {
-  const { data, fileType, fileBuffer } = parsedResult; // ← Add fileBuffer
+  const { data, fileType, fileBuffer } = parsedResult;
   
-  // Create results directory if it doesn't exist
-  if (!fs.existsSync('./results')) {
-    fs.mkdirSync('./results', { recursive: true });
-  }
+  const timestamp = Date.now();
+  const fileName = `SentiSheet-${originalFile.originalFilename}-${timestamp}`;
   
   if (fileType === 'csv') {
     // Create CSV with sentiment
     const csvContent = createCSVWithSentiment(data, analysisResults.sentiments, model);
-    
-    // Save to file system
-    const outputPath = `./results/output_${Date.now()}.csv`;
-    fs.writeFileSync(outputPath, csvContent);
+    const csvBuffer = Buffer.from(csvContent, 'utf8');
     
     return {
       type: 'csv',
-      path: outputPath,
+      buffer: csvBuffer,
       content: csvContent,
-      filename: `SentiSheet-${originalFile.originalFilename}`
+      filename: `${fileName}.csv`,
+      contentType: 'text/csv'
     };
     
   } else if (fileType === 'excel') {
@@ -641,54 +802,57 @@ async function createOutputFile(parsedResult, analysisResults, originalFile, she
     const buffer = createExcelWithSentiment(
       data, 
       analysisResults.sentiments, 
-      fileBuffer, // ← Use buffer instead of file.filepath
+      fileBuffer,
       sheetName || 'Sheet1',
       model
     );
     
-    // Save to file system
-    const outputPath = `./results/output_${Date.now()}.xlsx`;
-    fs.writeFileSync(outputPath, buffer);
-    
     return {
       type: 'excel', 
-      path: outputPath,
       buffer: buffer,
-      filename: `SentiSheet-${originalFile.originalFilename}`
+      filename: `${fileName}.xlsx`,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     };
   }
 }
 
 async function saveResults(sheetId, data) {
-  // Create results directory if it doesn't exist
-  if (!fs.existsSync('./results')) {
-    fs.mkdirSync('./results', { recursive: true });
-  }
-  
-  const resultsPath = `./results/${sheetId}.json`;
-  fs.writeFileSync(resultsPath, JSON.stringify(data, null, 2));
+  // Just return the data - no file system operations
+  return {
+    sheetId,
+    data,
+    timestamp: new Date().toISOString()
+  };
 }
 
 // =============================================================================
 // MAIN EXPORT FUNCTION
 // =============================================================================
 
-export async function processFileUpload(req, onProgress) {
+export async function processFileUpload(req, userId, supabase) {
   try {
     // Parse form data
     const { file, textColumn, sentimentClassification, model, sheetName } = await parseFormData(req);
     const parsedResult = await parseSpreadsheet(file, sheetName);
     const columnData = extractColumnData(parsedResult, textColumn);
-    
-    // Pass onProgress through to performSentimentAnalysis
+
+    const estimatedTokens = estimateTokenUsage(columnData, sentimentClassification);
+    console.log(`Estimated token usage: ${estimatedTokens}`);
+
+    const usageCheck = await checkDailyUsage(userId, estimatedTokens, supabase);
+    console.log('Usage check passed:', usageCheck);
+
+    // Pass userId through to performSentimentAnalysis
     const analysisResults = await performSentimentAnalysis(
       columnData, 
       model, 
       sentimentClassification,
-      onProgress  // Pass it through
     );
     
-    // Create output file with sentiment results
+    // Update actual usage after processing
+    await updateDailyUsage(userId, analysisResults.tokenUsage, supabase);
+    
+    // Create output file with sentiment results - returns buffer and metadata
     const outputFile = await createOutputFile(
       parsedResult, 
       analysisResults, 
@@ -697,9 +861,9 @@ export async function processFileUpload(req, onProgress) {
       model
     );
     
-    // Generate unique ID and save all results
+    // Generate unique ID and prepare results data
     const sheetId = uuidv4();
-    await saveResults(sheetId, {
+    const resultsData = await saveResults(sheetId, {
       originalData: parsedResult.data,
       sentimentResults: analysisResults,
       outputFile: outputFile,
@@ -718,9 +882,12 @@ export async function processFileUpload(req, onProgress) {
       success: true,
       id: sheetId,
       results: analysisResults,
-      downloadUrl: `/api/download/${sheetId}`,
+      outputFile: outputFile,
+      resultsData: resultsData,
+      usageInfo: usageCheck, // Include usage info in response
       metadata: {
         ...parsedResult.metadata,
+        filename: file.originalFilename,
         processedRows: columnData.length,
         model,
         textColumn,
