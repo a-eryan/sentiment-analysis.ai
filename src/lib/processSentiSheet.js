@@ -157,7 +157,7 @@ function estimateTokenUsage(columnData, sentimentClassification) {
   return estimatedTotalTokens;
 }
 
-async function checkDailyUsage(userId, estimatedTokens, supabase, model) { //TODO: 
+async function checkUserStatus(userId, estimatedTokens, supabase, model) { 
   try {
     const { data: users, error } = await supabase
       .from('users')
@@ -850,7 +850,7 @@ export async function processFileUpload(req, userId, supabase) {
     const estimatedTokens = estimateTokenUsage(columnData, sentimentClassification);
     console.log(`Estimated token usage: ${estimatedTokens}`);
 
-    const usageCheck = await checkDailyUsage(userId, estimatedTokens, supabase, aiModel);
+    const usageCheck = await checkUserStatus(userId, estimatedTokens, supabase, aiModel);
     console.log('Usage check passed:', usageCheck);
 
     // Pass userId through to performSentimentAnalysis
