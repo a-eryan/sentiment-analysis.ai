@@ -15,6 +15,7 @@ export default function Navbar() {
         if (error) {
           console.error('Error fetching session:', error);
         } else {
+          console.log('Fetched session:', data.session);
           setSession(data.session); // ✅ Store session in state
         }
       } catch (error) {
@@ -34,6 +35,7 @@ export default function Navbar() {
     // ✅ Cleanup subscription
     return () => subscription.unsubscribe();
   }, []);
+  console.log('Navbar session:', session);
 
   return (
     <nav aria-label="Landing page navigation">

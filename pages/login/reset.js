@@ -28,34 +28,43 @@ export default function ResetPassword() {
     const passwordsMatch = password === confirmPassword;
 
     useEffect(() => {
-    const handlePasswordReset = async () => {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const type = hashParams.get('type');
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        
-        if (type !== 'recovery' || !accessToken || !refreshToken) {
-            setError("We're sorry, but this reset password link is expired or invalid.");
-            return;
-        }
+        const checkSession = async () => {
+            // Supabase automatically handles the auth callback
+            // Just check if we have a session
+            const { data: { session }, error } = await supabase.auth.getSession();
+            
+            console.log('Session check:', { hasSession: !!session, error: error?.message });
+            
+            if (session?.user) {
+                console.log('User authenticated:', session.user.email);
+                setUser(session.user);
+            } else {
+                // Only show error if there's no code in URL (meaning it's not a fresh callback)
+                const queryParams = new URLSearchParams(window.location.search);
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                const hasCode = queryParams.get('code');
+                const hasTokens = hashParams.get('access_token');
+                
+                if (!hasCode && !hasTokens) {
+                    setError("We're sorry, but this reset password link is expired or invalid.");
+                }
+            }
+        };
 
-        // Set the session - this creates cookies for the API to use
-        const { data, error } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
+        // Listen for auth state changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth state changed:', event, session?.user?.email);
+            if (event === 'PASSWORD_RECOVERY') {
+                setUser(session?.user);
+                // Clean up URL
+                window.history.replaceState(null, null, window.location.pathname);
+            }
         });
 
-        if (error) {
-        setError("We're sorry, but this reset password link is expired or invalid.");
-        } else {
-        setUser(data.session.user);
-        window.history.replaceState(null, null, window.location.pathname);  // Clear hash for security
-        }
-    };
+        checkSession();
 
-    handlePasswordReset();
+        return () => subscription.unsubscribe();
     }, []);
-
 
     if (error === "We're sorry, but this reset password link is expired or invalid.") {
         return (
@@ -79,6 +88,8 @@ export default function ResetPassword() {
         const { error } = await response.json();
         setError(error);
     } else {
+        // Refresh the session to ensure it's valid after password update
+        await supabase.auth.refreshSession();
         router.push('/');
     }
     };

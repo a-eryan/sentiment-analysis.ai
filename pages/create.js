@@ -5,9 +5,11 @@ import { useRouter } from 'next/router';
 import Header from '@/components/Header';
 import { supabase } from '@/lib/supabase';
 import { createServerClient } from '@supabase/ssr'
+  import { getOrCreateCsrfToken } from '@/lib/csrf';
 
 
-export default function NewSentiSheetWithPreview({ isPremiumUser }) {
+
+export default function NewSentiSheetWithPreview({ isPremiumUser}) {
   const { register, handleSubmit, formState: { errors, isSubmitting, invalid, isSubmitSuccessful }, setValue, watch } = useForm();
   const [previewData, setPreviewData] = useState(null);
   const [selectedColumn, setSelectedColumn] = useState(null);
@@ -189,6 +191,7 @@ const onSubmit = async (data) => {
     formData.append('sentimentClassification', data.sentimentClassification);
     if (selectedSheet) formData.append('sheetName', selectedSheet);
     formData.append('aiModel', data.aiModel);
+    //formData.append('csrfToken', csrfToken); //append CSRF token for validation
 
     const response = await fetch('/api/upload', {
       method: 'POST',
@@ -523,28 +526,40 @@ const timeEstimation = (previewData) => {
   )
 }
 
-export async function getServerSideProps({ params, req, res }) { //parameter that contains 
+export async function getServerSideProps({ params, req, res }) { 
   try {
-        const supabase = createServerClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-          {
-            cookies: {
-              getAll() {
-                return Object.keys(req.cookies).map(name => ({
-                  name,
-                  value: req.cookies[name]
-                }));
-              },
-              setAll(cookiesToSet) {
-                cookiesToSet.forEach(({ name, value, options }) => {
-                  res.setHeader('Set-Cookie', `${name}=${value}; Path=/; ${options ? Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ') : ''}`);
-                });
-              },
-            },
-          }
-        );
-    // Get the session
+    // 1. Generate CSRF token FIRST
+    // const csrfToken = getOrCreateCsrfToken(req, res);
+    
+    // 2. Create Supabase client (may set auth cookies)
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          getAll() {
+            return Object.keys(req.cookies).map(name => ({
+              name,
+              value: req.cookies[name]
+            }));
+          },
+          setAll(cookiesToSet) {
+            // Preserve CSRF cookie by appending, not replacing
+            const cookies = cookiesToSet.map(({ name, value, options }) => {
+              const optStr = options ? Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ') : '';
+              return `${name}=${value}; Path=/; ${optStr}`;
+            });
+            
+            // Get existing Set-Cookie headers (including CSRF)
+            const existing = res.getHeader('Set-Cookie') || [];
+            const existingArray = Array.isArray(existing) ? existing : [existing];
+            
+            // Append new cookies
+            res.setHeader('Set-Cookie', [...existingArray, ...cookies]);
+          },
+        },
+      }
+    );
     const { data: { session } } = await supabase.auth.getSession(); //this is mainly a client-sided check, ignore warnings from supabase
     
     let isPremiumUser = false;
@@ -561,10 +576,12 @@ export async function getServerSideProps({ params, req, res }) { //parameter tha
         isPremiumUser = true;
       }
     }
-    console.log('isPremiumUser:', isPremiumUser);
+    console.log('User email:', session?.user?.email || 'Anonymous');
+    console.log('Is premium user:', isPremiumUser);
     
     return {
       props: {
+        //csrfToken,
         isPremiumUser
       }
     };
@@ -572,6 +589,7 @@ export async function getServerSideProps({ params, req, res }) { //parameter tha
     console.error('Error checking user subscription:', error);
     return {
       props: {
+        //csrfToken,
         isPremiumUser: false
       }
     };

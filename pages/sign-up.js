@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 
 export default function SignUp() {
   const router = useRouter();
-  const { register, handleSubmit, watch, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, formState: { errors, isSubmitSuccessful } } = useForm();
   
   //watching both fields in real-time: 
   const password = watch('password', '');
@@ -15,7 +15,7 @@ export default function SignUp() {
     useEffect(() => {
         const checkUser = async () => {
             const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
+            if (session?.user && !session.user.is_anonymous) {
                 router.push('/create');
             }
         };
@@ -29,7 +29,9 @@ export default function SignUp() {
       console.error('Error signing up:', error);
     } else {
       console.log('User signed up successfully:', user);
-      router.push('/create');
+      setTimeout(() => {
+        router.push('/login');
+      }, 3000); // Redirect after 3 seconds
     }
   };
 
@@ -126,7 +128,7 @@ export default function SignUp() {
 
         <button 
           type="submit" 
-          disabled={!allRequirementsMet || !passwordsMatch}
+          disabled={!allRequirementsMet || !passwordsMatch || isSubmitSuccessful}
           style={{
             opacity: (allRequirementsMet && passwordsMatch) ? 1 : 0.5,
             cursor: (allRequirementsMet && passwordsMatch) ? 'pointer' : 'not-allowed'
@@ -135,6 +137,7 @@ export default function SignUp() {
           Sign Up
         </button>
       </form>
+      {isSubmitSuccessful && <p>Sign up successful! Please check your email to confirm your account. You will be redirected to log in shortly.</p>}
     </div>
   );
 }

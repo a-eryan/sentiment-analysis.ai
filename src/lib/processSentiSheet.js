@@ -3,7 +3,7 @@ import { IncomingForm } from 'formidable';
 import Papa from 'papaparse';
 import XLSX from 'xlsx';
 import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
 import Anthropic from "@anthropic-ai/sdk";
@@ -949,7 +949,7 @@ export async function processFileUpload(req, userId, supabase) {
     );
     
     // Generate unique ID and prepare results data
-    const sheetId = uuidv4();
+    const sheetId = randomUUID();
     const resultsData = await saveResults(sheetId, {
       originalData: parsedResult.data,
       sentimentResults: analysisResults,

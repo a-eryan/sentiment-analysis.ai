@@ -24,7 +24,14 @@ export default function ForgotPassword() {
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: 'http://localhost:3000/login/reset',
+                // Disable PKCE for email magic links - they don't work with code verifiers
+                options: {
+                    emailRedirectTo: 'http://localhost:3000/login/reset',
+                }
             });
+            if (error) {
+                setForgotPasswordError(error.message);
+            }
         } catch (error) {
             setForgotPasswordError(error.message);
         }

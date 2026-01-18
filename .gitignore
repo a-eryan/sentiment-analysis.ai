@@ -45,3 +45,6 @@ claude-prototype/
 
 # results folder
 results/
+
+# local vscode settings
+.vscode/

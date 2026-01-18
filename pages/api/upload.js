@@ -1,10 +1,11 @@
 // pages/api/upload.js
 import { createServerClient } from "@supabase/ssr";
 import { processFileUpload } from "@/lib/processSentiSheet";
+import { IncomingForm } from 'formidable';
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // Disable default body parser to handle  multipart/form-data
     sizeLimit: '3mb',
   },
 };
@@ -15,7 +16,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Authentication
+    // 1. CSRF Validation - Parse form to get token from body
+    // const form = new IncomingForm();
+    // const [fields] = await form.parse(req);
+    
+    // const cookieToken = req.cookies['csrf-token'];
+    // const formToken = fields.csrfToken?.[0];
+
+    // if (!cookieToken || !formToken || cookieToken !== formToken) {
+    //   return res.status(403).json({ error: 'Invalid CSRF token' });
+    // }
+
+    // 2. Authentication
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -43,24 +55,13 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    console.log('User authenticated:', user.id, 'Email:', user.email || 'Anonymous');
-
-    // Debug: Check if user exists in public.users table using a simple query
-    const { data: userExists, error: userCheckError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', user.id)
-      .single();
-
-    if (userCheckError) {
-      console.error('User check failed:', userCheckError);
-      // Try a different approach - check via a test insert on another table or use RLS
-      console.log('Proceeding without user verification...');
-    } else {
-      console.log('User found in auth.users:', userExists.id);
+    if (!user.email_confirmed_at && !user.is_anonymous) {
+      return res.status(403).json({ error: 'As a security measure, all users must confirm their email address before processing SentiSheet requests.' });
     }
 
-    // 2. Process file (creates buffer in memory)
+    console.log('User authenticated:', user.id, 'Email:', user.email || 'Anonymous');
+
+    // 3. Process file (creates buffer in memory)
     const result = await processFileUpload(req, user.id, supabase);
     console.log('Processing completed:', result.id);
 
