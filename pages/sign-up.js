@@ -137,7 +137,8 @@ export default function SignUp() {
           Sign Up
         </button>
       </form>
-      {isSubmitSuccessful && <p>Sign up successful! Please check your email to confirm your account. You will be redirected to log in shortly.</p>}
+      {isSubmitSuccessful && <p>Sign up successful! If this is your first time signing up with this email, 
+        a verification email has been sent. You will be redirected to log in shortly.</p>}
     </div>
   );
 }

@@ -66,30 +66,31 @@ export default function Account() {
     }
   });
 const onSubmitDeleteAccount = async (data) => {
-    try {
-      const response = await fetch('/api/delete-account', {
-        method: 'POST',
-        body: JSON.stringify({ password: data.password }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      const result = await response.json();
-      
-      if (!response.ok) {
-        console.error('Error deleting account:', result.error);
-        setDeleteAccountResult(`Error: ${result.error}`);
-      } else {
-        console.log('Account deleted successfully');
-        setDeleteAccountClicked(false);
-        setDeleteAccountResult('Account deleted successfully. You will be redirected to the homepage shortly.');
-        setTimeout(() => {
-        router.push('/');
-        }, 3000); // Redirect after 3 seconds
-    } catch (error) {
-      console.error('Request failed:', error);
+  try {
+    const response = await fetch('/api/delete-account', {
+      method: 'POST',
+      body: JSON.stringify({ password: data.password }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      console.error('Error deleting account:', result.error);
+      setDeleteAccountResult(`Error: ${result.error}`);
+    } else {
+      console.log('Account deleted successfully');
+      setDeleteAccountClicked(false);
+      setDeleteAccountResult('Account deleted successfully. You will be redirected to the homepage shortly.');
+      setTimeout(() => {
+      router.push('/');
+      }, 3000); // Redirect after 3 seconds
     }
-  };
+  } catch (error) {
+    console.error('Request failed:', error);
+    setDeleteAccountResult('Request failed. Please try again later.');
+  }
+};
     return ( //make sure any changes for account is checked via supabase.auth.getUser() in API routes
     <>
       {session ? (
@@ -117,6 +118,7 @@ const onSubmitDeleteAccount = async (data) => {
             )}
             {changePasswordResult && <p>{changePasswordResult}</p>}
             <button onClick={() => setDeleteAccountClicked(true)}>Delete Account</button>
+            {deleteAccountResult && <p>{deleteAccountResult}</p>}
             {deleteAccountClicked && (
               <>
                 <form onSubmit={handleSubmitDelete(onSubmitDeleteAccount)}>
@@ -128,12 +130,10 @@ const onSubmitDeleteAccount = async (data) => {
                   <button type="submit">Confirm Account Deletion</button>                  
                 </form>
                 <button onClick={() => setDeleteAccountClicked(false)}> Cancel </button>
-                {deleteAccountResult && <p>{deleteAccountResult}</p>}  
               </>
             )}
           </>
         ) : (<p>You must be logged in to view this page.</p>)}
     </>
   );
-}
 }

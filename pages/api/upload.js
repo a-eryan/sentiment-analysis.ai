@@ -55,14 +55,48 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // 2.5. Parse form once (for both captcha and file processing)
+    const form = new IncomingForm();
+    const [fields, files] = await form.parse(req);
+
+    // 2.6. Captcha verification for anonymous users
+    if (!user.email) {
+      const captchaToken = fields.captchaToken?.[0];
+
+      if (!captchaToken) {
+        return res.status(400).json({ error: 'Captcha verification required for anonymous users' });
+      }
+
+      // Verify captcha with hCaptcha API
+      const verifyResponse = await fetch('https://api.hcaptcha.com/siteverify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          secret: process.env.HCAPTCHA_SECRET_KEY,
+          response: captchaToken,
+        }),
+      });
+
+      const verifyData = await verifyResponse.json();
+
+      if (!verifyData.success) {
+        console.error('Captcha verification failed:', verifyData['error-codes']);
+        return res.status(403).json({ error: 'Captcha verification failed' });
+      }
+
+      console.log('Captcha verified for anonymous user');
+    }
+
     if (!user.email_confirmed_at && !user.is_anonymous) {
       return res.status(403).json({ error: 'As a security measure, all users must confirm their email address before processing SentiSheet requests.' });
     }
 
     console.log('User authenticated:', user.id, 'Email:', user.email || 'Anonymous');
 
-    // 3. Process file (creates buffer in memory)
-    const result = await processFileUpload(req, user.id, supabase);
+    // 3. Process file (pass parsed fields and files instead of req)
+    const result = await processFileUpload({ fields, files }, user.id, supabase);
     console.log('Processing completed:', result.id);
 
     // 3. Upload processed file to Supabase storage

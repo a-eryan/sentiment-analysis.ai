@@ -175,6 +175,7 @@ async function checkUserStatus(userId, estimatedTokens, supabase, model) {
     if (model && premiumModels.includes(model) && !users?.subscription_id) {
       throw new Error(`The selected AI model "${model}" is available for premium users only. Please upgrade your account to access this model.`);
     }
+    console.log('User data retrieved:', users);
     return checkLimitsAndReturn(users.daily_usage_count, estimatedTokens, supabase, users.subscription_id);
   } catch (error) {
     console.error('Authentication check failed:', error);
@@ -252,9 +253,9 @@ async function updateDailyUsage(userId, tokensUsed, supabase) {
 // FORM DATA PARSING
 // =============================================================================
 
-async function parseFormData(req) {
-  const form = new IncomingForm(); //parse multipart form data 
-  const [fields, files] = await form.parse(req); 
+async function parseFormData({fields, files}) {
+  // const form = new IncomingForm(); //parse multipart form data 
+  // const [fields, files] = await form.parse(req); 
   
   const file = files.file?.[0];
   const textColumn = fields.textColumn?.[0];
@@ -916,10 +917,10 @@ async function saveResults(sheetId, data) {
 // MAIN EXPORT FUNCTION
 // =============================================================================
 
-export async function processFileUpload(req, userId, supabase) {
+export async function processFileUpload(parsedFormData, userId, supabase) {
   try {
     // Parse form data
-    const { file, textColumn, sentimentClassification, aiModel, sheetName } = await parseFormData(req);
+    const { file, textColumn, sentimentClassification, aiModel, sheetName } = await parseFormData(parsedFormData);
     const parsedResult = await parseSpreadsheet(file, sheetName);
     const columnData = extractColumnData(parsedResult, textColumn);
 

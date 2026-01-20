@@ -1,15 +1,15 @@
 //pages/create.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { set, useForm } from 'react-hook-form';
 import { useRouter } from 'next/router';
 import Header from '@/components/Header';
 import { supabase } from '@/lib/supabase';
 import { createServerClient } from '@supabase/ssr'
-  import { getOrCreateCsrfToken } from '@/lib/csrf';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
 
 
-export default function NewSentiSheetWithPreview({ isPremiumUser}) {
+export default function NewSentiSheetWithPreview({ isPremiumUser, isAnonymous }) {
   const { register, handleSubmit, formState: { errors, isSubmitting, invalid, isSubmitSuccessful }, setValue, watch } = useForm();
   const [previewData, setPreviewData] = useState(null);
   const [selectedColumn, setSelectedColumn] = useState(null);
@@ -17,9 +17,19 @@ export default function NewSentiSheetWithPreview({ isPremiumUser}) {
   const [previewError, setPreviewError] = useState(''); //for backend preview errors 
   const [selectedSheet, setSelectedSheet] = useState('');
   const [submitError, setSubmitError] = useState('');  //for backend submission errors upon submission
+  const [captchaToken, setCaptchaToken] = useState();
+  const captcha = useRef();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressInfo, setProgressInfo] = useState(null);
+
+  // Reset captcha when there's a submit error
+  useEffect(() => {
+    if (submitError && isAnonymous && captcha.current) {
+      captcha.current.resetCaptcha();
+      setCaptchaToken(null);
+    }
+  }, [submitError]); // isAnonymous is static from props, no need in deps 
 
 
   /*register: registers individual input fields for validation
@@ -177,20 +187,25 @@ export default function NewSentiSheetWithPreview({ isPremiumUser}) {
 const onSubmit = async (data) => {
   try {
     setSubmitError(''); //clear any previous errors
-    const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        const { error } = await supabase.auth.signInAnonymously();
-        if (error) { //supabase errors don't throw, they return errors 
-          console.error('Anonymous sign-in failed:', error);
-          setSubmitError(error.message);
-        }
+
+    // Ensure user is authenticated (anonymous if needed)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        console.error('Anonymous sign-in failed:', error);
+        setSubmitError('Failed to authenticate. Please try again.');
+        return;
       }
+    }
+
     const formData = new FormData();
     formData.append('file', data.file[0]);
     formData.append('textColumn', data.textColumn);
     formData.append('sentimentClassification', data.sentimentClassification);
     if (selectedSheet) formData.append('sheetName', selectedSheet);
     formData.append('aiModel', data.aiModel);
+    if (isAnonymous && captchaToken) formData.append('captchaToken', captchaToken); // For anonymous user verification
     //formData.append('csrfToken', csrfToken); //append CSRF token for validation
 
     const response = await fetch('/api/upload', {
@@ -221,6 +236,7 @@ const timeEstimation = (previewData) => {
   return estimatedTime
 };
 
+console.log('isAnonymous:', isAnonymous);
   return (
   
     <>
@@ -499,10 +515,9 @@ const timeEstimation = (previewData) => {
         </table>
         {errors.aiModel && <span className="text-red-500 text-sm">{errors.aiModel.message}</span>}
       </fieldset>
-{/* Submit Button - Always visible but disabled until requirements met */}
         <button 
           type="submit"
-          disabled={isSubmitting }
+          disabled={isSubmitting} //disable if submitting or anonymous without captcha token
           className={`px-8 py-3 rounded-lg text-xl font-semibold transition-colors ${
             isSubmitting 
               ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
@@ -511,6 +526,14 @@ const timeEstimation = (previewData) => {
         >
           {isSubmitting ? 'Processing...' : 'Analyze Sentiment'}
         </button>
+          {isAnonymous && (
+            <HCaptcha
+              sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY}
+              onVerify={token => setCaptchaToken(token)}
+              ref={captcha}
+            />
+          )}
+
         {submitError && <span className="text-red-500 text-sm">{submitError}</span>}
       </form>
     </>
@@ -560,37 +583,39 @@ export async function getServerSideProps({ params, req, res }) {
         },
       }
     );
-    const { data: { session } } = await supabase.auth.getSession(); //this is mainly a client-sided check, ignore warnings from supabase
+    const { data: { user } } = await supabase.auth.getUser();
     
     let isPremiumUser = false;
     
-    if (session?.user) {
+    if (user) {
       // Check if user exists in users table and has subscription_id
       const { data: userData, error } = await supabase
         .from('users')
         .select('subscription_id')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .single();
       
       if (!error && userData?.subscription_id) {
         isPremiumUser = true;
       }
     }
-    console.log('User email:', session?.user?.email || 'Anonymous');
+    console.log('User email:', user?.email || 'No email (anonymous or not signed in)');
     console.log('Is premium user:', isPremiumUser);
+    console.log('Requires captcha:', !user?.email);
     
     return {
       props: {
-        //csrfToken,
-        isPremiumUser
+        isPremiumUser,
+        isAnonymous: !user?.email // No email = anonymous or not signed in = needs captcha
       }
     };
   } catch (error) {
+
     console.error('Error checking user subscription:', error);
     return {
       props: {
-        //csrfToken,
-        isPremiumUser: false
+        isPremiumUser: false,
+        isAnonymous: true // Safe default - assume anonymous on error
       }
     };
   }
