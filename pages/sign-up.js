@@ -60,7 +60,7 @@ export default function SignUp() {
               message: 'Invalid email address'
             },
           })} />
-          {errors.email && <span style={{color: 'red'}}>{errors.email.message}</span>}
+          {errors.email && <span className="text-red-500">{errors.email.message}</span>}
         </label>
         
         <label>
@@ -69,7 +69,7 @@ export default function SignUp() {
             required: 'Password is required',
             validate: () => allRequirementsMet || 'Password does not meet all requirements'
           })} />
-          {errors.password && <span style={{color: 'red'}}>{errors.password.message}</span>}
+          {errors.password && <span className="text-red-500">{errors.password.message}</span>}
         </label>
 
         <label>
@@ -78,48 +78,30 @@ export default function SignUp() {
             required: 'Please confirm your password',
             validate: (value) => value === password || 'Passwords do not match'
           })} />
-          {errors.confirmPassword && <span style={{color: 'red'}}>{errors.confirmPassword.message}</span>}
+          {errors.confirmPassword && <span className="text-red-500">{errors.confirmPassword.message}</span>}
         </label>
 
         {/* ✅ Real-time password requirements display */}
         {password && (
-          <div style={{ 
-            marginTop: '10px', 
-            padding: '10px', 
-            border: '1px solid #ccc', 
-            borderRadius: '4px',
-            backgroundColor: '#f9f9f9'
-          }}>
+          <div className="mt-2.5 p-2.5 border border-gray-300 rounded bg-gray-50">
             <h4>Password Requirements:</h4>
-            <ul style={{ margin: 0, paddingLeft: '20px' }}>
-              <li style={{ 
-                color: passwordRequirements.minLength ? 'green' : 'red' 
-              }}>
+            <ul className="m-0 pl-5">
+              <li className={passwordRequirements.minLength ? 'text-green-600' : 'text-red-600'}>
                 {passwordRequirements.minLength ? '✓' : '✗'} At least 12 characters
               </li>
-              <li style={{ 
-                color: passwordRequirements.hasUppercase ? 'green' : 'red' 
-              }}>
+              <li className={passwordRequirements.hasUppercase ? 'text-green-600' : 'text-red-600'}>
                 {passwordRequirements.hasUppercase ? '✓' : '✗'} One uppercase letter (A-Z)
               </li>
-              <li style={{ 
-                color: passwordRequirements.hasLowercase ? 'green' : 'red' 
-              }}>
+              <li className={passwordRequirements.hasLowercase ? 'text-green-600' : 'text-red-600'}>
                 {passwordRequirements.hasLowercase ? '✓' : '✗'} One lowercase letter (a-z)
               </li>
-              <li style={{ 
-                color: passwordRequirements.hasNumber ? 'green' : 'red' 
-              }}>
+              <li className={passwordRequirements.hasNumber ? 'text-green-600' : 'text-red-600'}>
                 {passwordRequirements.hasNumber ? '✓' : '✗'} One number (0-9)
               </li>
-              <li style={{ 
-                color: passwordRequirements.hasSpecialChar ? 'green' : 'red' 
-              }}>
+              <li className={passwordRequirements.hasSpecialChar ? 'text-green-600' : 'text-red-600'}>
                 {passwordRequirements.hasSpecialChar ? '✓' : '✗'} One special character (!@#$%^&*)
               </li>
-              <li style={{ 
-                color: passwordsMatch ? 'green' : 'red' 
-              }}>
+              <li className={passwordsMatch ? 'text-green-600' : 'text-red-600'}>
                 {passwordsMatch ? '✓' : '✗'} Passwords match
               </li>
             </ul>
@@ -129,10 +111,7 @@ export default function SignUp() {
         <button 
           type="submit" 
           disabled={!allRequirementsMet || !passwordsMatch || isSubmitSuccessful}
-          style={{
-            opacity: (allRequirementsMet && passwordsMatch) ? 1 : 0.5,
-            cursor: (allRequirementsMet && passwordsMatch) ? 'pointer' : 'not-allowed'
-          }}
+          className={(allRequirementsMet && passwordsMatch) ? 'opacity-100 cursor-pointer' : 'opacity-50 cursor-not-allowed'}
         >
           Sign Up
         </button>

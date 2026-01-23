@@ -55,7 +55,7 @@ export default function LogIn() {
                         type="email" 
                         {...register('email', { required: 'Email is required' })} 
                     />
-                    {errors.email && <span style={{color: 'red'}}>{errors.email.message}</span>}
+                    {errors.email && <span className="text-red-500">{errors.email.message}</span>}
                 </label>
                 
                 <label>
@@ -64,7 +64,7 @@ export default function LogIn() {
                         type="password" 
                         {...register('password', { required: 'Password is required' })} 
                     />
-                    {errors.password && <span style={{color: 'red'}}>{errors.password.message}</span>}
+                    {errors.password && <span className="text-red-500">{errors.password.message}</span>}
                 </label>
                 <Link className="cursor-pointer hover:underline" href="/login/forgot-password">Forgot Password?</Link>
                 <button type="submit" disabled={isSubmitting}>

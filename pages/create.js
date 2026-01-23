@@ -6,10 +6,11 @@ import Header from '@/components/Header';
 import { supabase } from '@/lib/supabase';
 import { createServerClient } from '@supabase/ssr'
 import HCaptcha from '@hcaptcha/react-hcaptcha';
+import Sidebar from '@/components/Sidebar';
 
 
 
-export default function NewSentiSheetWithPreview({ isPremiumUser, isAnonymous }) {
+export default function NewSentiSheetWithPreview({ isPremiumUser, isAnonymous, sentiSheetLinks }) {
   const { register, handleSubmit, formState: { errors, isSubmitting, invalid, isSubmitSuccessful }, setValue, watch } = useForm();
   const [previewData, setPreviewData] = useState(null);
   const [selectedColumn, setSelectedColumn] = useState(null);
@@ -238,11 +239,12 @@ const timeEstimation = (previewData) => {
 
 console.log('isAnonymous:', isAnonymous);
   return (
-  
-    <>
-    {!isSubmitting && 
-      <>
-      <Header bodyText="Submit SentiSheet request" className="text-center " />
+    <div className="flex">
+      <Sidebar sentiSheetLinks={sentiSheetLinks} />
+      <main className="flex-1">
+      {!isSubmitting &&
+        <>
+        <Header bodyText="Submit SentiSheet request" className="text-center " />
       <progress value={calculateProgress()} max="2" className="w-full mt-2" /> {/*function is always called per render*/}
 
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-9xl mx-auto p-6">
@@ -538,85 +540,83 @@ console.log('isAnonymous:', isAnonymous);
       </form>
     </>
   }
-  {isSubmitting && (
-    <>
-      <Header bodyText="Processing request" className="text-center " />
-      <p> We received your SentiSheet request and are currently processing your request right now. </p>
-      <p> Estimated processing time: {timeEstimation(previewData)} seconds </p>
-    </>
-  )}
-  </>
+      {isSubmitting && (
+        <>
+          <Header bodyText="Processing request" className="text-center " />
+          <p> We received your SentiSheet request and are currently processing your request right now. </p>
+          <p> Estimated processing time: {timeEstimation(previewData)} seconds </p>
+        </>
+      )}
+      </main>
+    </div>
   )
 }
 
-export async function getServerSideProps({ params, req, res }) { 
-  try {
-    // 1. Generate CSRF token FIRST
-    // const csrfToken = getOrCreateCsrfToken(req, res);
-    
-    // 2. Create Supabase client (may set auth cookies)
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        cookies: {
-          getAll() {
-            return Object.keys(req.cookies).map(name => ({
-              name,
-              value: req.cookies[name]
-            }));
-          },
-          setAll(cookiesToSet) {
-            // Preserve CSRF cookie by appending, not replacing
-            const cookies = cookiesToSet.map(({ name, value, options }) => {
-              const optStr = options ? Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ') : '';
-              return `${name}=${value}; Path=/; ${optStr}`;
-            });
-            
-            // Get existing Set-Cookie headers (including CSRF)
-            const existing = res.getHeader('Set-Cookie') || [];
-            const existingArray = Array.isArray(existing) ? existing : [existing];
-            
-            // Append new cookies
-            res.setHeader('Set-Cookie', [...existingArray, ...cookies]);
-          },
+export async function getServerSideProps({ req, res }) {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return Object.keys(req.cookies).map(name => ({
+            name,
+            value: req.cookies[name]
+          }));
         },
-      }
-    );
+        setAll(cookiesToSet) {
+          const cookies = cookiesToSet.map(({ name, value, options }) => {
+            const optStr = options ? Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ') : '';
+            return `${name}=${value}; Path=/; ${optStr}`;
+          });
+          const existing = res.getHeader('Set-Cookie') || [];
+          const existingArray = Array.isArray(existing) ? existing : [existing];
+          res.setHeader('Set-Cookie', [...existingArray, ...cookies]);
+        },
+      },
+    }
+  );
+
+  let isPremiumUser = false;
+  let sentiSheetLinks = [];
+  let isAnonymous = true;
+
+  try {
     const { data: { user } } = await supabase.auth.getUser();
-    
-    let isPremiumUser = false;
-    
+
     if (user) {
-      // Check if user exists in users table and has subscription_id
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('subscription_id')
-        .eq('id', user.id)
-        .single();
-      
-      if (!error && userData?.subscription_id) {
+      isAnonymous = !user.email;
+
+      const [userResult, sheetsResult] = await Promise.all([ // executing multiple asynchronous operations concurrently and waiting for all of them to complete. 
+        supabase
+          .from('users')
+          .select('subscription_id')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('sentisheets')
+          .select('id, file_name, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+      ]);
+
+      if (!userResult.error && userResult.data?.subscription_id) {
         isPremiumUser = true;
       }
-    }
-    console.log('User email:', user?.email || 'No email (anonymous or not signed in)');
-    console.log('Is premium user:', isPremiumUser);
-    console.log('Requires captcha:', !user?.email);
-    
-    return {
-      props: {
-        isPremiumUser,
-        isAnonymous: !user?.email // No email = anonymous or not signed in = needs captcha
-      }
-    };
-  } catch (error) {
 
-    console.error('Error checking user subscription:', error);
-    return {
-      props: {
-        isPremiumUser: false,
-        isAnonymous: true // Safe default - assume anonymous on error
+      if (!sheetsResult.error && sheetsResult.data) {
+        sentiSheetLinks = sheetsResult.data;
       }
-    };
+    }
+  } catch (error) {
+    console.error('Error in getServerSideProps:', error);
   }
+
+  return {
+    props: {
+      sentiSheetLinks,
+      isPremiumUser,
+      isAnonymous,
+    },
+  };
 }

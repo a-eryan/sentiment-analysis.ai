@@ -47,9 +47,9 @@ return (
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <input type="email" placeholder="Email" {...register('email', { required: 'Email address is required', pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ })} />
                     <button type="submit" disabled={isSubmitting}>Send Reset Link</button>
-                    {errors.email && <span style={{ color: 'red' }}>{errors.email.message}</span>}
+                    {errors.email && <span className="text-red-500">{errors.email.message}</span>}
                 </form>
-                {ForgotPasswordError && <p>{ForgotPasswordError}</p>}
+                {ForgotPasswordError && <p className="text-red-500">{ForgotPasswordError}</p>}
             </div>
         ) : (
             <p>Successfully sent password reset link to {email}.</p>
