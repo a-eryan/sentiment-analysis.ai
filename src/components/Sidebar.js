@@ -1,47 +1,51 @@
 import Link from 'next/link';
 import { useState } from 'react';
+import ExpandMenu from '../../public/expand-menu.svg';
+import Spreadsheet from '../../public/spreadsheet-icon-new.svg';
+import User from '../../public/person-circle.svg';
 
 export default function Sidebar({ sentiSheetLinks = [] }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
-    <aside className={isCollapsed ? "w-16 bg-gray-50 border-r min-h-screen p-4" : "w-64 bg-gray-50 border-r min-h-screen p-4"}>
-      <nav className="flex flex-col h-full">
-        <ul className="space-y-2">
-          <button onClick={() => setIsCollapsed(!isCollapsed)}>
-            {isCollapsed ? 'Show' : 'Hide'} SentiSheets
+    <aside className={`bg-background border-r-2 border-foreground/10 min-h-screen p-4 flex flex-col ${isCollapsed ? "w-16" : "w-64"}`}>
+      <nav className="flex flex-col flex-1">
+        <ul className="flex flex-col gap-2">
+          <button onClick={() => setIsCollapsed(!isCollapsed)} className={`!p-0 !m-0 mb-4 rounded-full w-8 h-8 flex items-center justify-center hover:bg-foreground/10 ${!isCollapsed ? 'self-end' : ''}`}>
+            {isCollapsed ? <ExpandMenu className="rotate-180 [&_path]:fill-foreground hover:cursor-pointer" /> : <ExpandMenu className="[&_path]:fill-foreground hover:cursor-pointer" />}
           </button>
-          {}
           {sentiSheetLinks.map((sheet) => (
             <li key={sheet.id}>
               <Link
                 href={`/sentisheet/${sheet.id}`}
-                className="block p-2 rounded hover:bg-gray-200 transition-colors"
+                className={`flex items-center gap-2 p-2 rounded-2xl hover:bg-foreground/10 transition-colors ${isCollapsed ? 'justify-center' : ''} `}
+                title ={sheet.file_name || 'Untitled'}
               >
-              {!isCollapsed && (
-              <>
-                <span className="text-sm font-medium truncate block">
-                  {sheet.file_name || 'Untitled'}
-                </span>
-                  {sheet.created_at && (
-                      <span className="text-xs text-gray-500">
+                {!isCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium truncate block">
+                      {sheet.file_name?.replace(/^SentiSheet-\s*/i, '') || 'Untitled'}
+                    </span>
+                    {sheet.created_at && (
+                      <span className="text-xs text-foreground/60">
                         {new Date(sheet.created_at).toLocaleDateString()}
                       </span>
-                  )}
-              </>              
-              )}
-
+                    )}
+                  </div>
+                )}
+                <Spreadsheet width={22} height={22} viewBox="0 0 512 512" className="shrink-0 [&_path]:fill-foreground" />
               </Link>
             </li>
           ))}
           {sentiSheetLinks.length === 0 && (
             <li>
-              <p className="text-sm text-gray-500">No SentiSheets yet. Create one to get started.</p>
+              <p className="text-sm text-foreground/60">No SentiSheets yet. Create one to get started.</p>
             </li>
           )}
         </ul>
-        <Link href="/account" className="mt-auto block text-blue-600 hover:underline ">
-          Back to Account
+        <Link href="/account" className="mt-auto p-2 rounded-2xl hover:bg-foreground/10 transition-colors flex items-center justify-center gap-2">
+          {isCollapsed ? '' : 'My Account'}
+          <User className="shrink-0 [&_path]:fill-foreground" />
         </Link>
       </nav>
     </aside>

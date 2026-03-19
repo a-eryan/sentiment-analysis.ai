@@ -162,36 +162,33 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
                 </div>
             </p>
             {/* Preview Table */}
-            <div className="border rounded-lg overflow-hidden">
+            <div className="rounded-2xl overflow-hidden border-2 border-foreground/10">
               <div className="overflow-x-auto max-h-96">
-                <table className="min-w-full">
+                <table className="min-w-full border-collapse text-left">
                   {/* table header: */}
-                  <thead className="bg-gray-50"> 
+                  <thead className="bg-background">
                     {/*table row:*/}
-                    <tr>
+                    <tr className="border-b-2 border-foreground/10">
                       {previewData.headers.map((header, index) => (
-                        <th 
+                        <th
                           key={index}
-                          className={`px-4 py-3 text-left text-sm font-medium cursor-pointer transition-colors border-r last:border-r-0 $`}
+                          className="px-4 py-3 text-left text-sm font-medium"
                         >
                           <div className="flex items-center justify-between">
                             <span className="truncate">{header}</span>
-                            <span className="text-xs text-gray-500 ml-2">#{index + 1}</span>
+                            <span className="text-xs text-foreground/60 ml-2">#{index + 1}</span>
                           </div>
-
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="bg-white">
+                  <tbody className="bg-background">
                     {previewData.previewData.map((row, rowIndex) => (
-                      <tr key={rowIndex} className="border-t">
+                      <tr key={rowIndex} className="border-t-2 border-foreground/10 hover:bg-foreground/5 transition-colors">
                         {previewData.headers.map((header, colIndex) => (
-                          <td 
+                          <td
                             key={colIndex}
-                            className={`px-4 py-3 text-sm cursor-pointer transition-colors border-r last:border-r-0`}
-                              
-          
+                            className="px-4 py-3 text-sm"
                           >
                             <div className="max-w-xs truncate">
                               {row[header] || ''}
@@ -205,7 +202,7 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
               </div>
             {/* Sheet Tabs for Excel - Moved to bottom like real Excel */}
             {previewData.fileType === 'excel' && previewData.availableSheets && previewData.availableSheets.length > 1 && (
-              <div className="bg-gray-100 border-t p-2">
+              <div className="border-t-2 border-foreground/10 p-2">
                 <div className="flex space-x-1">
                   {/*FIX: buttons default to submit when inside a form*/}
                   {previewData.availableSheets.map((sheet, index) => (
@@ -213,6 +210,7 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
                       key={index}
                       type="button"
                       onClick={() => handleSheetChange(sheet)}
+                      className="hover:cursor-pointer"
                     >
                       {sheet}
                     </button> 
@@ -221,8 +219,8 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
               </div>
             )}
             {previewData.fileType === 'excel' && previewData.availableSheets && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600">
+              <div className="bg-foreground/5 rounded-lg p-4">
+                <p className="text-sm text-foreground/60">
                   <strong>Current Sheet:</strong> {previewData.currentSheet}
                   {previewData.availableSheets.length > 1 && (
                     <>

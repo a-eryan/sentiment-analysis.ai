@@ -83,6 +83,19 @@ export default function Account({ isPremiumUser, subscriptionPrice, userEmail })
     }
   };
   const allRequirementsMet = Object.values(passwordRequirements).every(req => req);
+
+  const newPasswordOptions = {
+    required: "Password is required",
+    validate: () => allRequirementsMet || "Password does not meet all requirements"
+  };
+  const confirmPasswordOptions = {
+    required: "Please confirm your password",
+    validate: (value) => value === password || "Passwords do not match"
+  };
+  const deletePasswordOptions = {
+    required: "Password is required"
+  };
+
   supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT') {
       setSession(null);
@@ -116,73 +129,72 @@ const onSubmitDeleteAccount = async (data) => {
   }
 };
 
-  return ( //make sure any changes for account is checked via supabase.auth.getUser() in API routes
-    <>
+  return (
+    <main className="container mx-auto max-w-2xl p-8 flex flex-col gap-6">
       {session ? (
         <>
-          <h1>Your Account</h1>
-            {/* Account details and settings go here */}
-            <button onClick={() => setChangePasswordClicked(true)}>Change Password</button>
+          <h1 className="text-4xl font-bold">Your Account</h1>
+
+          {/* Change Password */}
+          <div className="rounded-2xl border-2 border-foreground/10 p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2>Change Password</h2>
+              <button onClick={() => setChangePasswordClicked(!changePasswordClicked)} className="!px-4 !py-2 text-sm bg-foreground text-background">
+                {changePasswordClicked ? "Cancel" : "Change"}
+              </button>
+            </div>
+            {changePasswordResult && <p className="text-sm text-foreground/60">{changePasswordResult}</p>}
             {changePasswordClicked && (
-              <>
-                <form onSubmit={handleSubmitPassword(onSubmitChangePassword)}>
-                  <input type="password" placeholder="New Password" {...registerPassword('password', {
-                    required: 'Password is required',
-                    validate: () => allRequirementsMet || 'Password does not meet all requirements'
-                  })} />
-                  <input type="password" placeholder="Confirm New Password" {...registerPassword('confirmPassword', {
-                    required: 'Please confirm your password',
-                    validate: (value) => value === password || 'Passwords do not match'
-                  })} />
-                  {passwordErrors.password && <span className='text-red-500'>{passwordErrors.password.message}</span>}
-                  {passwordErrors.confirmPassword && <span className='text-red-500'>{passwordErrors.confirmPassword.message}</span>}
-                  <button type="submit">Update Password</button>
-                </form>
-                <button onClick={() => setChangePasswordClicked(false)}> Cancel </button>
-              </>
+              <form onSubmit={handleSubmitPassword(onSubmitChangePassword)} className="flex flex-col gap-3">
+                <input type="password" placeholder="New Password" className="border border-foreground/20 rounded-xl px-4 py-2 bg-background text-foreground w-full" {...registerPassword("password", newPasswordOptions)} />
+                <input type="password" placeholder="Confirm New Password" className="border border-foreground/20 rounded-xl px-4 py-2 bg-background text-foreground w-full" {...registerPassword("confirmPassword", confirmPasswordOptions)} />
+                {passwordErrors.password && <span className="text-red-500 text-sm">{passwordErrors.password.message}</span>}
+                {passwordErrors.confirmPassword && <span className="text-red-500 text-sm">{passwordErrors.confirmPassword.message}</span>}
+                <button type="submit" className="bg-foreground text-background self-start">Update Password</button>
+              </form>
             )}
-            {changePasswordResult && <p>{changePasswordResult}</p>}
-            <button onClick={() => setDeleteAccountClicked(true)}>Delete Account</button>
-            {deleteAccountResult && <p>{deleteAccountResult}</p>}
+          </div>
+
+          {/* Delete Account */}
+          <div className="rounded-2xl border-2 border-red-500/20 p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-red-500">Delete Account</h2>
+              <button onClick={() => setDeleteAccountClicked(!deleteAccountClicked)} className="!px-4 !py-2 text-sm bg-red-500 text-white">
+                {deleteAccountClicked ? "Cancel" : "Delete"}
+              </button>
+            </div>
+            {deleteAccountResult && <p className="text-sm text-foreground/60">{deleteAccountResult}</p>}
             {deleteAccountClicked && (
-              <>
-                <form onSubmit={handleSubmitDelete(onSubmitDeleteAccount)}>
-                  <input type="password" placeholder="Password" {...registerDelete('password', {
-                    required: 'Password is required',
-                  })} />
-                  {deleteErrors.password && <span className='text-red-500'>{deleteErrors.password.message}</span>}
-                  {deleteErrors.confirmPassword && <span className='text-red-500'>{deleteErrors.confirmPassword.message}</span>}
-                  <button type="submit">Confirm Account Deletion</button>
-                </form>
-                <button onClick={() => setDeleteAccountClicked(false)}> Cancel </button>
-              </>
+              <form onSubmit={handleSubmitDelete(onSubmitDeleteAccount)} className="flex flex-col gap-3">
+                <input type="password" placeholder="Confirm your password" className="border border-foreground/20 rounded-xl px-4 py-2 bg-background text-foreground w-full" {...registerDelete("password", deletePasswordOptions)} />
+                {deleteErrors.password && <span className="text-red-500 text-sm">{deleteErrors.password.message}</span>}
+                <button type="submit" className="bg-red-500 text-white self-start">Confirm Deletion</button>
+              </form>
             )}
-            {!isPremiumUser && 
-              <button onClick={() => setIsBuyingSubscription(true)}>Buy Subscription</button>}
-            {isBuyingSubscription && !isPremiumUser && (
-              <div className='flex flex-col items-center justify-center p-4 border border-dashed border-gray-300 rounded'>
-                <h2>You’re one step to unlocking all of sentiment-analysis.ai.</h2>
-                <p>Upgrade to premium for more features and insights.</p>
-                <CheckoutForm userEmail={userEmail} />
-              </div>
-            )}
-            {/* {boughtSubscription && !isPremiumUser && (
-              <div>
-                <h2>Thank you for your purchase!</h2>
-                <p>Your subscription is now active.</p>
-              </div>
-            )} */}
-            {boughtSubscription && (
-              <ReturnCheckout/>
-            )}
-          </>
-        ) : (
-        <div>
-          <h1> You must be logged in to view your account.</h1>
-          <p>You will be redirected shortly.</p>
+          </div>
+
+          {/* Subscription */}
+          {!isPremiumUser && !isBuyingSubscription && (
+            <button onClick={() => setIsBuyingSubscription(true)} className="rainbow-transition bg-gradient-to-b from-blue-700 to-violet-600 text-white self-start">
+              Upgrade to Pro
+            </button>
+          )}
+          {isBuyingSubscription && !isPremiumUser && (
+            <div className="rounded-2xl border-2 border-foreground/10 p-6 flex flex-col gap-4 items-center">
+              <h2>You&apos;re one step away from unlocking all of sentiment-analysis.ai.</h2>
+              <p className="text-foreground/60">Upgrade to Pro for more features and insights.</p>
+              <CheckoutForm userEmail={userEmail} />
+            </div>
+          )}
+          {boughtSubscription && <ReturnCheckout />}
+        </>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <h1 className="text-4xl font-bold">You must be logged in to view your account.</h1>
+          <p className="text-foreground/60">You will be redirected shortly.</p>
         </div>
-        )}
-    </>
+      )}
+    </main>
   );
 }
 

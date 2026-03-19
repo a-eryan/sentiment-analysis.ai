@@ -4,18 +4,31 @@
   --background: #ffffff;
   --foreground: #171717;
 }
+/* What belongs in @theme inline:
 
+Theme tokens: --color-*, --shadow-*, --font-*, etc.
+These become Tailwind utilities like bg-*, shadow-*, font-*
+What stays outside:
+
+Custom CSS classes like .rainbow-transition
+Keyframe animations
+Regular CSS rulesets */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --shadow-bottom: 0 4px 6px -1px rgba(18, 18, 18, 0.03);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #121212;
+    --foreground: #E9E9E9;
+  }
+
+  @theme inline {
+    --shadow-bottom: 0 4px 6px -1px rgba(233, 233, 233, 0.03);
   }
 }
 
@@ -24,3 +37,27 @@ body {
   color: var(--foreground);
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
+h2 {
+  @apply text-3xl;
+}
+p {
+  @apply text-lg;
+}
+button{
+  @apply px-8 py-3 rounded-2xl;
+}
+
+.text-rainbow-mask {
+  @apply bg-gradient-to-b from-blue-700 to-violet-600 text-transparent bg-clip-text
+}
+
+@keyframes rainbow-hue {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.rainbow-transition {
+  animation: rainbow-hue 45s linear infinite;
+}
+
+

@@ -53,7 +53,7 @@ export default function Navbar() {
             <>
               <li>
                 <Link href="/account" className="hover:underline">
-                  <Image src="/person-circle.svg" width={57} height={57} alt="Account" />
+                  <Image src="/person-circle.svg" width={57} height={57} alt="Account" className='dark:invert' />
                 </Link>
               </li>
               <li className="hover:underline cursor-pointer" onClick={async () => await supabase.auth.signOut()}>Log out</li>
