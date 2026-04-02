@@ -1,41 +1,17 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react'; // ← Add useState
-import { supabase } from '@/lib/supabase';
+import { useContext } from 'react';
+import { useRouter } from 'next/router';
+import { AuthContext } from '@/lib/authContext';
 
 export default function Navbar() {
-  // ✅ Add state to store session data
-  const [session, setSession] = useState(null);
+  const { session, signOut, loading } = useContext(AuthContext);
+  const router = useRouter();
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error fetching session:', error);
-        } else {
-          console.log('Fetched session:', data.session);
-          setSession(data.session); // ✅ Store session in state
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      } 
-    };
-
-    fetchSession();
-
-    // ✅ Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session); //set session state every time an auth event happens
-      }
-    );
-
-    // ✅ Cleanup subscription
-    return () => subscription.unsubscribe();
-  }, []);
-  console.log('Navbar session:', session);
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/login');
+  };
 
   return (
     <nav aria-label="Landing page navigation ">
@@ -49,14 +25,16 @@ export default function Navbar() {
           </Link>
         </span>
         <ul className="flex space-x-6 text-lg items-center">
-          {session && !session.user.is_anonymous ? (
+          {loading ? (
+            <li className="text-gray-500">Loading...</li>
+          ) : session && !session.user.is_anonymous ? (
             <>
               <li>
                 <Link href="/account" className="hover:underline">
                   <Image src="/person-circle.svg" width={57} height={57} alt="Account" className='dark:invert' />
                 </Link>
               </li>
-              <li className="hover:underline cursor-pointer" onClick={async () => await supabase.auth.signOut()}>Log out</li>
+              <li className="hover:underline cursor-pointer" onClick={handleLogout}>Log out</li>
             </>
           ) : (
             <>

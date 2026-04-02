@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { createServerClient } from '@supabase/ssr'
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { getHCaptchaConfig } from '../hcaptcha.config';
+import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 
 const {siteKey } = getHCaptchaConfig();
@@ -255,9 +256,11 @@ const timeEstimation = (previewData) => {
 
 console.log('isAnonymous:', isAnonymous);
   return (
-    <div className="flex">
-      <Sidebar/>
-      <main className="flex-1">
+    <>
+      <Navbar />
+      <div className="flex">
+        <Sidebar/>
+        <main className="flex-1">
       {!isSubmitting &&
         <>
         <h1>Submit SentiSheet Request</h1>
@@ -340,7 +343,7 @@ console.log('isAnonymous:', isAnonymous);
                 of {previewData.headers.length}
                 {selectedColumn && (
                   <span className="font-medium text-foreground">
-                    → "{previewData.headers[selectedColumn - 1]}"
+                    → &quot;{previewData.headers[selectedColumn - 1]}&quot;
                   </span>
                 )}
               </span>
@@ -479,7 +482,7 @@ console.log('isAnonymous:', isAnonymous);
                 className="mt-1"
               />
               <div>
-                <p className="font-semibold">Dr. Ekman's Six Basic Emotions</p>
+                <p className="font-semibold">{`Dr. Ekman's Six Basic Emotions`}</p>
                 <div className="flex space-x-4 text-sm text-gray-600 mt-1">
                   <span>Anger</span>
                   <span>Disgust</span>
@@ -611,6 +614,7 @@ console.log('isAnonymous:', isAnonymous);
       )}
       </main>
     </div>
+    </>
   )
 }
 
@@ -627,13 +631,24 @@ export async function getServerSideProps({ req, res }) {
           }));
         },
         setAll(cookiesToSet) {
-          const cookies = cookiesToSet.map(({ name, value, options }) => {
-            const optStr = options ? Object.entries(options).map(([k, v]) => `${k}=${v}`).join('; ') : '';
-            return `${name}=${value}; Path=/; ${optStr}`;
+          // Grab any existing cookies already set on the response
+          const currentCookies = res.getHeader('Set-Cookie') ?? [];
+          const cookieArray = Array.isArray(currentCookies) ? currentCookies : [currentCookies];
+
+          // Map the new Supabase cookies into fully formatted strings
+          const newCookies = cookiesToSet.map(({ name, value, options }) => {
+            let cookieStr = `${name}=${encodeURIComponent(value)}`;
+            if (options.domain) cookieStr += `; Domain=${options.domain}`;
+            if (options.maxAge) cookieStr += `; Max-Age=${options.maxAge}`;
+            if (options.path) cookieStr += `; Path=${options.path}`;
+            if (options.httpOnly) cookieStr += `; HttpOnly`;
+            if (options.secure) cookieStr += `; Secure`;
+            if (options.sameSite) cookieStr += `; SameSite=${options.sameSite}`;
+            return cookieStr;
           });
-          const existing = res.getHeader('Set-Cookie') || [];
-          const existingArray = Array.isArray(existing) ? existing : [existing];
-          res.setHeader('Set-Cookie', [...existingArray, ...cookies]);
+
+          // Set them all at once
+          res.setHeader('Set-Cookie', [...cookieArray, ...newCookies]);
         },
       },
     }
@@ -644,6 +659,16 @@ export async function getServerSideProps({ req, res }) {
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
+
+    // Redirect unauthenticated users to login
+    if (!user || user.is_anonymous) {
+      return {
+        redirect: {
+          destination: '/login',
+          permanent: false,
+        },
+      };
+    }
 
     if (user) {
       isAnonymous = !user.email;

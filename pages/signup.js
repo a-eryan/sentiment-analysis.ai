@@ -8,7 +8,10 @@ import Squares from '@/components/Squares';
 
 export default function SignUp() {
   const router = useRouter();
-  const { register, handleSubmit, watch, formState: { errors, isSubmitSuccessful } } = useForm();
+  const [signupEmail, setSignupEmail] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
+  const { register, handleSubmit, watch, getValues, formState: { errors, isSubmitSuccessful } } = useForm();
   
   //watching both fields in real-time: 
   const password = watch('password', '');
@@ -27,15 +30,38 @@ export default function SignUp() {
 
   const onSubmit = async (data) => {
     const { email, password } = data;
-    const { user, error } = await supabase.auth.signUp({ email, password });
+    const { user, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      }
+    });
     if (error) {
       console.error('Error signing up:', error);
     } else {
       console.log('User signed up successfully:', user);
-      setTimeout(() => {
-        router.push('/login');
-      }, 3000); // Redirect after 3 seconds
+      setSignupEmail(email);
+      //Don't redirect, user must verify email first
     }
+  };
+
+  const resendVerificationEmail = async () => {
+    const email = signupEmail || getValues('email');
+    setResendLoading(true);
+    setResendMessage('');
+    
+    try {
+      const { error } = await supabase.auth.resendEmailConfirmationLink(email);
+      if (error) {
+        setResendMessage(`Error: ${error.message}`);
+      } else {
+        setResendMessage('✓ Verification email sent! Check your inbox.');
+      }
+    } catch (err) {
+      setResendMessage('Error sending email. Try again later.');
+    }
+    setResendLoading(false);
   };
 
   // ✅ Real-time password requirement checks
@@ -58,74 +84,100 @@ export default function SignUp() {
     <Navbar />    
     <div className="flex-1 mb-12 border max-w-4xl mx-auto p-6 mt-12 rounded outlined">
       <h1>Sign Up</h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 justify-center items-center mt-8">
-        <label className="flex flex-col gap-1">
-          Email
-          <input className="outlined px-2" type="email" {...register('email', {
-            required: 'Email address is required',
-            pattern: {
-              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-              message: 'Invalid email address'
-            },
-          })} />
-          {errors.email && <span className="text-red-500">{errors.email.message}</span>}
-        </label>
-        
-        <label className="flex flex-col gap-1">
-          Password
-          <input className="outlined px-2 py-1" type="password" {...register('password', {
-            required: 'Password is required',
-            validate: () => allRequirementsMet || 'Password does not meet all requirements'
-          })} />
-          {errors.password && <span className="text-red-500">{errors.password.message}</span>}
-        </label>
-
-        <label className="flex flex-col gap-1">
-          Confirm Password
-          <input className="outlined px-2 py-1" type="password" {...register('confirmPassword', {
-            required: 'Please confirm your password',
-            validate: (value) => value === password || 'Passwords do not match'
-          })} />
-          {errors.confirmPassword && <span className="text-red-500">{errors.confirmPassword.message}</span>}
-        </label>
-          <Link className=" outlined p-1 cursor-pointer hover:underline" href="/login">Already have an account?</Link>
-        {/* ✅ Real-time password requirements display */}
-        {password && (
-          <div className=" p-2.5 border border-gray-300 rounded outlined">
-            <h4>Password Requirements</h4>
-            <ul className="m-0 pl-5">
-              <li className={passwordRequirements.minLength ? 'text-green-600' : 'text-red-600'}>
-                {passwordRequirements.minLength ? '✓' : '✗'} At least 12 characters
-              </li>
-              <li className={passwordRequirements.hasUppercase ? 'text-green-600' : 'text-red-600'}>
-                {passwordRequirements.hasUppercase ? '✓' : '✗'} One uppercase letter (A-Z)
-              </li>
-              <li className={passwordRequirements.hasLowercase ? 'text-green-600' : 'text-red-600'}>
-                {passwordRequirements.hasLowercase ? '✓' : '✗'} One lowercase letter (a-z)
-              </li>
-              <li className={passwordRequirements.hasNumber ? 'text-green-600' : 'text-red-600'}>
-                {passwordRequirements.hasNumber ? '✓' : '✗'} One number (0-9)
-              </li>
-              <li className={passwordRequirements.hasSpecialChar ? 'text-green-600' : 'text-red-600'}>
-                {passwordRequirements.hasSpecialChar ? '✓' : '✗'} One special character (!@#$%^&*)
-              </li>
-              <li className={passwordsMatch ? 'text-green-600' : 'text-red-600'}>
-                {passwordsMatch ? '✓' : '✗'} Passwords match
-              </li>
-            </ul>
+      
+      {isSubmitSuccessful ? (
+        <div className="flex flex-col gap-4 items-center justify-center py-8">
+          <div className="bg-green-50 border border-green-300 rounded p-6 max-w-md text-center">
+            <h2 className="text-green-700 font-bold mb-2">✓ Check Your Email</h2>
+            <p className="text-green-600 mb-4">
+              We sent a verification link to <strong>{signupEmail}</strong>. 
+              Click the link in your email to confirm your account.
+            </p>
+            <button 
+              onClick={resendVerificationEmail}
+              disabled={resendLoading}
+              className="outlined p-2 cursor-pointer hover:underline"
+            >
+              {resendLoading ? 'Sending...' : 'Resend Email'}
+            </button>
+            {resendMessage && (
+              <p className={`mt-3 ${resendMessage.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                {resendMessage}
+              </p>
+            )}
+            <p className="text-sm text-gray-600 mt-4">
+              Already verified? <Link href="/login" className="underline">Log in here</Link>
+            </p>
           </div>
-        )}
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 justify-center items-center mt-8">
+          <label className="flex flex-col gap-1">
+            Email
+            <input className="outlined px-2" type="email" {...register('email', {
+              required: 'Email address is required',
+              pattern: {
+                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                message: 'Invalid email address'
+              },
+            })} />
+            {errors.email && <span className="text-red-500">{errors.email.message}</span>}
+          </label>
+          
+          <label className="flex flex-col gap-1">
+            Password
+            <input className="outlined px-2 py-1" type="password" {...register('password', {
+              required: 'Password is required',
+              validate: () => allRequirementsMet || 'Password does not meet all requirements'
+            })} />
+            {errors.password && <span className="text-red-500">{errors.password.message}</span>}
+          </label>
 
-        <button 
-          type="submit" 
-          disabled={!allRequirementsMet || !passwordsMatch || isSubmitSuccessful}
-          className={`bg-foreground text-background ${(allRequirementsMet && passwordsMatch) ? 'opacity-100 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
-        >
-          Sign Up
-        </button>
-      </form>
-      {isSubmitSuccessful && <p>Sign up successful! If this is your first time signing up with this email, 
-        a verification email has been sent. You will be redirected to log in shortly.</p>}
+          <label className="flex flex-col gap-1">
+            Confirm Password
+            <input className="outlined px-2 py-1" type="password" {...register('confirmPassword', {
+              required: 'Please confirm your password',
+              validate: (value) => value === password || 'Passwords do not match'
+            })} />
+            {errors.confirmPassword && <span className="text-red-500">{errors.confirmPassword.message}</span>}
+          </label>
+            <Link className=" outlined p-1 cursor-pointer hover:underline" href="/login">Already have an account?</Link>
+          {/* Passwords requirements */}
+          {password && (
+            <div className=" p-2.5 border border-gray-300 rounded outlined">
+              <h4>Password Requirements</h4>
+              <ul className="m-0 pl-5">
+                <li className={passwordRequirements.minLength ? 'text-green-600' : 'text-red-600'}>
+                  {passwordRequirements.minLength ? '✓' : '✗'} At least 12 characters
+                </li>
+                <li className={passwordRequirements.hasUppercase ? 'text-green-600' : 'text-red-600'}>
+                  {passwordRequirements.hasUppercase ? '✓' : '✗'} One uppercase letter (A-Z)
+                </li>
+                <li className={passwordRequirements.hasLowercase ? 'text-green-600' : 'text-red-600'}>
+                  {passwordRequirements.hasLowercase ? '✓' : '✗'} One lowercase letter (a-z)
+                </li>
+                <li className={passwordRequirements.hasNumber ? 'text-green-600' : 'text-red-600'}>
+                  {passwordRequirements.hasNumber ? '✓' : '✗'} One number (0-9)
+                </li>
+                <li className={passwordRequirements.hasSpecialChar ? 'text-green-600' : 'text-red-600'}>
+                  {passwordRequirements.hasSpecialChar ? '✓' : '✗'} One special character (!@#$%^&*)
+                </li>
+                <li className={passwordsMatch ? 'text-green-600' : 'text-red-600'}>
+                  {passwordsMatch ? '✓' : '✗'} Passwords match
+                </li>
+              </ul>
+            </div>
+          )}
+
+          <button 
+            type="submit" 
+            disabled={!allRequirementsMet || !passwordsMatch}
+            className={`bg-foreground text-background ${(allRequirementsMet && passwordsMatch) ? 'opacity-100 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
+          >
+            Sign Up
+          </button>
+        </form>
+      )}
     </div>
   </>    
   );
