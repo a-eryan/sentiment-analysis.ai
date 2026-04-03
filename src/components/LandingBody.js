@@ -75,7 +75,7 @@ export default function LandingBody() {
           />
         </div>
 
-        <h1 className="rainbow-transition text-rainbow-mask">Sentiment analysis in seconds.</h1>
+        <h1 className="rainbow-transition text-rainbow-mask leading-tight">Sentiment analysis in seconds.</h1>
         <p>Upload your spreadsheet and let AI conduct sentiment analysis in the matter of seconds — free of charge, no download and no account required.</p>
         <button className="bg-background rounded text-2xl rainbow-transition" style={{boxShadow: '0 4px 4px 0 #440098 inset, 0 4px 1px 0 #1F45DA inset', filter: 'drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25))'}}><Link href="/create">Try for free</Link></button>
         <div className="relative inline-block">
@@ -110,9 +110,9 @@ export default function LandingBody() {
             <hr className={`rainbow-transition absolute -bottom-3 inset-x-0 h-1 border-0 rounded-t-[20px] bg-gradient-to-b from-blue-700 to-violet-600 transition-opacity ${activeSection === "Plans and pricing" ? "opacity-100" : "opacity-0"}`} />
           </li>
         </ul>
-        <div className={`bg-background overflow-hidden ${activeSection === "Overview" ? "grid grid-cols-2 gap-8 p-8 h-full w-full" : "invisible h-0"}`}>
+        <div className={`bg-background  ${activeSection === "Overview" ? "grid grid-cols-2 gap-8 p-8 h-full w-full" : "invisible h-0 overflow-hidden"}`}> {/*overflow-hidden to prevent the children from being visible when the section is not active*/}
           <SpotlightCard className="bg-background rainbow-transition flex flex-col p-12 outlined" spotlightColor="rgba(43, 108, 176, 0.18)" >
-            <BrainIcon width={100} height={100} className="[&_path]:fill-blue-700" viewBox="0 0 5000 5000"/> {/*0 0: start showing the svg at the very beginning of the grid
+            <BrainIcon width={100} height={100} className="shrink-0 [&_path]:fill-blue-700" viewBox="0 0 5000 5000"/> {/*0 0: start showing the svg at the very beginning of the grid
             where: X-axis: Still goes left to right (0 to 5000)
             Y-axis: Still goes top to bottom (0 to 5000)
             5000 5000: Creates a canvas that is 5,000 units wide and 5,000 units high.
@@ -122,22 +122,22 @@ export default function LandingBody() {
             <p>Sentiment analysis done with the mind of both accuracy and speed. Process hundreds of rows in seconds or thousands of rows in minutes.</p>
           </SpotlightCard>
           <SpotlightCard className="rainbow-transition flex flex-col p-8 h-full gap-1 outlined" spotlightColor="rgba(43, 108, 176, 0.15)" >
-            <SpeedometerIcon width={100} height={100} className="[&_path]:fill-blue-700/70" viewBox="0 0 139 139"/>
+            <SpeedometerIcon width={100} height={100} className="shrink-0 [&_path]:fill-blue-700/70" viewBox="0 0 139 139"/>
             <h2 className="py-1">Usage Transparency</h2>
             <p>Track your daily usage, manage data retention, and permanently delete requests. No hidden limits or surprise bills.</p>
           </SpotlightCard>
           <SpotlightCard className="rainbow-transition flex flex-col p-8 h-full gap-1 outlined" spotlightColor="rgba(43, 108, 176, 0.15)" >
-            <OpensourceIcon width={100} height={100} className="[&_path]:fill-blue-700/70" viewBox="0 0 512 512"/>
+            <OpensourceIcon width={100} height={100} className="shrink-0 [&_path]:fill-blue-700/70" viewBox="0 0 512 512"/>
             <h2 className="py-1">Open Source</h2>
-            <p>It's never been more easier to tinker with products. Running a different LLM model? Modifying the batching algorithm? Do so freely via the GitHub repository of this project.</p>
+            <p>It&apos;s never been more easier to tinker with products. Running a different LLM model? Modifying the batching algorithm? Do so freely via the GitHub repository of this project.</p>
           </SpotlightCard>
           <SpotlightCard className="rainbow-transition flex flex-col p-8 h-full gap-1 outlined" spotlightColor="rgba(43, 108, 176, 0.15)" >
-            <SecurityIcon width={100} height={100} className="[&_path]:fill-blue-700/70" viewBox="0 0 512 512"/>
+            <SecurityIcon width={100} height={100} className="shrink-0 [&_path]:fill-blue-700/70" viewBox="0 0 512 512"/>
             <h2 className="py-1">Private by Design</h2>
             <p>Your data stays yours. Files are processed and stored on SOC 2 compliant infrastructure — never sold, never used for ads.</p>
           </SpotlightCard>
         </div>
-        <div className={`w-full overflow-hidden ${activeSection === "FAQ" ? "grid grid-cols-2 p-8 gap-8 text-2xl mx-auto items-start" : "invisible h-0"}`}>
+        <div className={`w-full  ${activeSection === "FAQ" ? "grid grid-cols-2 p-8 gap-8 text-2xl mx-auto items-start h-full w-full" : "invisible h-0 overflow-hidden"}`}>
           {faqData.map((item, index) => (
             <div key={index} className=" bg-foreground text-background flex-1 p-4 rounded-2xl">
               <div className="flex items-center justify-between">              
@@ -152,7 +152,7 @@ export default function LandingBody() {
             </div>
           ))}
         </div>
-        <div className={`w-full overflow-hidden ${activeSection === "Plans and pricing" ? "p-8" : "invisible h-0"}`}>
+        <div className={`w-full  ${activeSection === "Plans and pricing" ? "p-8 h-full w-full" : "invisible h-0 overflow-hidden"}`}>
           <div className="rounded-2xl overflow-hidden bg-background text-foreground border-3 border-foreground">
             <table className="w-full border-collapse text-left text-base">
               <thead>

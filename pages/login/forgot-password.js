@@ -17,7 +17,7 @@ export default function ForgotPassword() {
 			}
 		};
 		checkUser();
-	}, []);
+	}, [router]);
 	const { register, handleSubmit, watch, formState: { isSubmitting, isSubmitSuccessful, errors } } = useForm();
 	const onSubmit = async (data) => {
 		const { email } = data;
