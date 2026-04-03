@@ -129,7 +129,7 @@ export default function LandingBody() {
           <SpotlightCard className="rainbow-transition flex flex-col p-8 h-full gap-1 outlined" spotlightColor="rgba(43, 108, 176, 0.15)" >
             <OpensourceIcon width={100} height={100} className="[&_path]:fill-blue-700/70" viewBox="0 0 512 512"/>
             <h2 className="py-1">Open Source</h2>
-            <p>It's never been more easier to tinker with products. Running a different LLM model? Modifying the batching algorithm? Do so freely via the GitHub repository of this project.</p>
+            <p>It&apos;s never been more easier to tinker with products. Running a different LLM model? Modifying the batching algorithm? Do so freely via the GitHub repository of this project.</p>
           </SpotlightCard>
           <SpotlightCard className="rainbow-transition flex flex-col p-8 h-full gap-1 outlined" spotlightColor="rgba(43, 108, 176, 0.15)" >
             <SecurityIcon width={100} height={100} className="[&_path]:fill-blue-700/70" viewBox="0 0 512 512"/>

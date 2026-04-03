@@ -1,5 +1,5 @@
 // pages/sentisheet/[id].js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
 import { createServerClient } from '@supabase/ssr'
@@ -16,13 +16,8 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
   const [previewError, setPreviewError] = useState();
   const [selectedSheet, setSelectedSheet] = useState('');
 
-  useEffect(() => {
-    if (results) {
-      loadPreview(null, results.analysis_results?.sheetName || ''); //initial load without file (will fetch from storage)
-    }
-  }, [results]);
-
-  const loadPreview = async (file = null, sheetName = '') => {
+  
+  const loadPreview = useCallback(async (file = null, sheetName = '') => { //useCallback to return the same function reference across renders as long as the dependencies (results) don't change
     try {
       let fileData = file;
 
@@ -62,7 +57,14 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
       setPreviewData(null);
     }
 
-  }
+  }, [results]);
+
+  useEffect(() => {
+    if (results) {
+      loadPreview(null, results.analysis_results?.sheetName || '');
+    }
+  }, [results, loadPreview]);
+
   const handleSheetChange = async (sheetName) => {
     if (previewData && sheetName !== selectedSheet) {
       console.log(sheetName);

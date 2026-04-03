@@ -32,7 +32,7 @@ export default function NewSentiSheetWithPreview({ isPremiumUser, isAnonymous })
       captcha.current.resetCaptcha();
       setCaptchaToken(null);
     }
-  }, [submitError]); // isAnonymous is static from props, no need in deps 
+  }, [submitError, isAnonymous]);
 
 
   /*register: registers individual input fields for validation
@@ -43,12 +43,14 @@ export default function NewSentiSheetWithPreview({ isPremiumUser, isAnonymous })
   */
   const router = useRouter(); //to redirect when successful POST 
 
+  const sentimentClassification = watch('sentimentClassification');
+
   useEffect(() => {
     // Clear custom sentiments if sentimentClassification changes away from 'Custom'
-    if (watch('sentimentClassification') !== 'Custom') {
+    if (sentimentClassification !== 'Custom') {
       resetField('customSentiments'); //resets value AND error
     }
-  }, [watch('sentimentClassification')]);
+  }, [sentimentClassification, resetField]);
 
   const calculateProgress = () => {
     let progress = 0;
@@ -340,7 +342,7 @@ console.log('isAnonymous:', isAnonymous);
                 of {previewData.headers.length}
                 {selectedColumn && (
                   <span className="font-medium text-foreground">
-                    → "{previewData.headers[selectedColumn - 1]}"
+                    → &quot;{previewData.headers[selectedColumn - 1]}&quot;
                   </span>
                 )}
               </span>
@@ -479,7 +481,7 @@ console.log('isAnonymous:', isAnonymous);
                 className="mt-1"
               />
               <div>
-                <p className="font-semibold">Dr. Ekman's Six Basic Emotions</p>
+                <p className="font-semibold">Dr. Ekman&apos;s Six Basic Emotions</p>
                 <div className="flex space-x-4 text-sm text-gray-600 mt-1">
                   <span>Anger</span>
                   <span>Disgust</span>

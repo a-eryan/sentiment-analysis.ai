@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
+import Link from 'next/link';
 
 
 
@@ -71,7 +72,7 @@ export default function ResetPassword() {
 					<div>
 							<h1>Reset Your Password</h1>
 							<p className="text-red-500">{error}</p>
-							<p><a href="/login">Go back to login</a></p>
+							<Link href="/login">Go back to login</Link>
 					</div>
 			);
 	}
