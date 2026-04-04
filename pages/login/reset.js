@@ -4,13 +4,15 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
+import Squares from '@/components/Squares';
+
 
 export default function ResetPassword() {
   const {
     register,
     handleSubmit,
     watch,
-    formState: { isSubmitting, errors },
+    formState: { isSubmitting, errors, isValid },
   } = useForm();
 
   const [user, setUser] = useState(null);
@@ -105,37 +107,47 @@ export default function ResetPassword() {
 
   if (isCheckingSession) {
     return (
-      <>
+      <div className="flex-1">
+        <div className="fixed inset-0 -z-10 blur-[1.5px]">
+          <Squares speed={0.2} cellWidth={100} cellHeight={40} direction="up" />
+        </div>
         <Navbar />
-        <div className="border max-w-4xl mx-auto p-6 mt-12 rounded outlined">
+        <div className="flex flex-col gap-4 text-center mx-auto p-6 my-12 rounded outlined w-full max-w-md">
           <h1>Reset Your Password</h1>
           <p>Validating your recovery session...</p>
         </div>
-      </>
+      </div>
     );
   }
 
   if (!user) {
     return (
-      <>
+      <div className='flex-1 '>
+        <div className="fixed inset-0 -z-10 blur-[1.5px]">
+          <Squares speed={0.2} cellWidth={100} cellHeight={40} direction="up" />
+        </div>      
         <Navbar />
-        <div className="border max-w-4xl mx-auto p-6 mt-12 rounded outlined">
+        <div className="flex flex-col gap-4 text-center border mx-auto p-6 my-12 rounded outlined w-full max-w-md ">
           <h1>Reset Your Password</h1>
           <p className="text-red-500">
             {error || "We couldn't validate your recovery session. Please request a new reset link."}
           </p>
-          <p>
-            <a href="/login">Go back to login</a>
-          </p>
+          <Link href="/login" className="  outlined p-1 cursor-pointer hover:underline">
+            Back to Login
+          </Link>
         </div>
-      </>
+        
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="flex-1">
+      <div className="fixed inset-0 -z-10 blur-[1.5px]">
+        <Squares speed={0.2} cellWidth={100} cellHeight={40} direction="up" />
+      </div>
       <Navbar />
-      <div className="border max-w-4xl mx-auto p-6 mt-12 rounded outlined">
+      <div className="flex flex-col gap-4 mx-auto p-6 my-12 rounded outlined w-full max-w-md">
         <h1>Reset Your Password</h1>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 justify-center items-center mt-8">
           <label className="flex flex-col gap-1">
@@ -176,7 +188,7 @@ export default function ResetPassword() {
           </label>
 
           {password && (
-            <div className="mt-2.5 p-2.5 border border-gray-300 rounded bg-gray-50">
+            <div className="mt-2.5 p-2.5 border border-gray-300 rounded outlined">
               <h4>Password Requirements:</h4>
               <ul className="m-0 pl-5">
                 <li className={passwordRequirements.minLength ? 'text-green-600' : 'text-red-600'}>
@@ -201,13 +213,13 @@ export default function ResetPassword() {
             </div>
           )}
 
-          <button type="submit" disabled={isSubmitting}>
+          <button type="submit" disabled={isSubmitting} className={`bg-foreground text-background hover:cursor-pointer ${isValid ? 'opacity-100' : 'opacity-50 !cursor-not-allowed'}`}>
             {isSubmitting ? 'Resetting password...' : 'Reset password'}
           </button>
 
           {error && <p className="text-red-500">{error}</p>}
         </form>
       </div>
-    </>
+    </div>
   );
 }

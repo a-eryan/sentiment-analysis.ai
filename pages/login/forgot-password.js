@@ -13,7 +13,7 @@ export default function ForgotPassword() {
 		const checkUser = async () => {
 			const { data: { session } } = await supabase.auth.getSession();
 			if (session?.user && !session.user.is_anonymous) {
-				router.push('/');
+				router.push('/create');
 			}
 		};
 		checkUser();
