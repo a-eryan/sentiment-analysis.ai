@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
+import Link from 'next/link';
 
 export default function ResetPassword() {
   const {
