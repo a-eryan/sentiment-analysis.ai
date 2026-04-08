@@ -1,13 +1,11 @@
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import Squares from '@/components/Squares';
 
 export default function SignUp() {
-  const router = useRouter();
   const [signupEmail, setSignupEmail] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
@@ -17,18 +15,7 @@ export default function SignUp() {
   const password = watch('password', '');
   const confirmPassword = watch('confirmPassword', '');
   
-    //redirect if user is already logged in
-    useEffect(() => {
-        const checkUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user && !session.user.is_anonymous) {
-                router.push('/create');
-            }
-        };
-        checkUser();
-    }, [router]);
-
-  const onSubmit = async (data) => {
+    const onSubmit = async (data) => {
     const { email, password } = data;
     const { user, error } = await supabase.auth.signUp({ 
       email, 
