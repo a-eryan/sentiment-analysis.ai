@@ -660,16 +660,6 @@ export async function getServerSideProps({ req, res }) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Redirect unauthenticated users to login
-    if (!user || user.is_anonymous) {
-      return {
-        redirect: {
-          destination: '/login',
-          permanent: false,
-        },
-      };
-    }
-
     if (user) {
       isAnonymous = !user.email;
 
