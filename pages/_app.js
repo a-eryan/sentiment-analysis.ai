@@ -5,9 +5,9 @@ import { AuthProvider } from "@/components/AuthProvider";
 export default function App({ Component, pageProps }) {
   //where all pages get rendered
   return (
-    <AuthProvider>
+    <div className="flex flex-col min-h-dvh"AuthProvider>
       <Component {...pageProps} />
       <Footer />
-    </AuthProvider>
+    </div>
   );
 }

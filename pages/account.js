@@ -16,6 +16,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export default function Account({ isPremiumUser, subscriptionPrice, userEmail }) {
     //redirect if user is not logged in
     const [session, setSession] = useState(undefined);
+    const [isAuthLoading, setIsAuthLoading] = useState(true);
     const [changePasswordClicked, setChangePasswordClicked] = useState(false);
     const [deleteAccountClicked, setDeleteAccountClicked] = useState(false);
     const [changePasswordResult, setChangePasswordResult] = useState('');
@@ -28,21 +29,55 @@ export default function Account({ isPremiumUser, subscriptionPrice, userEmail })
   const buyingSubscription = useSearchParams();
   const getBuyingSubscription = buyingSubscription.get('buyingSubscription');
   const boughtSubscription = buyingSubscription.get('session_id');
+
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-    }
-    getSession();
-  }, []);
+    let mounted = true;
+
+    const syncSession = async (sessionOverride) => {
+      const nextSession =
+        sessionOverride ??
+        (await supabase.auth.getSession()).data.session;
+
+      if (!mounted) return;
+
+      setSession(nextSession ?? null);
+      setIsAuthLoading(false);
+    };
+
+    syncSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === 'SIGNED_OUT') {
+        if (mounted) {
+          setSession(null);
+          setIsAuthLoading(false);
+        }
+        router.push('/login');
+        return;
+      }
+
+      syncSession(nextSession);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [router]);
+
+
   useEffect(() => {
-    if (session === null) {
+    if (!isAuthLoading && session === null) {
       const timeout = setTimeout(() => {
         router.push(isBuyingSubscription ? '/login?buyingSubscription=true' : '/login');
       }, 3000);
+
       return () => clearTimeout(timeout);
     }
-  }, [session, isBuyingSubscription, router]);
+  }, [isAuthLoading, session, isBuyingSubscription, router]);
+
 
   useEffect(() => {
     if (getBuyingSubscription === 'true') {
@@ -62,28 +97,24 @@ export default function Account({ isPremiumUser, subscriptionPrice, userEmail })
 
   const onSubmitChangePassword = async (data) => {
     try {
-      const response = await fetch('/api/change-password', {
-        method: 'POST',
-        body: JSON.stringify({ newPassword: data.password }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const { error } = await supabase.auth.updateUser({
+        password: data.password,
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        console.error('Error updating password:', result.error);
-        setChangePasswordResult(`Error: ${result.error}`);
-      } else {
-        console.log('Password updated successfully');
-        setChangePasswordClicked(false);
-        setChangePasswordResult('Password updated successfully.');
+      if (error) {
+        console.error('Error updating password:', error.message);
+        setChangePasswordResult(`Error: ${error.message}`);
+        return;
       }
+
+      setChangePasswordClicked(false);
+      setChangePasswordResult('Password updated successfully.');
     } catch (error) {
       console.error('Request failed:', error);
+      setChangePasswordResult('Request failed. Please try again later.');
     }
   };
+
   const allRequirementsMet = Object.values(passwordRequirements).every(req => req);
 
   const newPasswordOptions = {
@@ -98,15 +129,6 @@ export default function Account({ isPremiumUser, subscriptionPrice, userEmail })
     required: "Password is required"
   };
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        setSession(null);
-        router.push('/login');
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [router]);
 const onSubmitDeleteAccount = async (data) => {
   try {
     const response = await fetch('/api/delete-account', {
@@ -146,15 +168,21 @@ const onSubmitDeleteAccount = async (data) => {
             direction="up"
           />
         </div>
-
-      {session ? (
+      
+      
+      {isAuthLoading ? (
+        <div className="flex flex-col gap-2 bg-background rounded-2xl p-12 mx-auto items-center outlined">
+          <h1 className="text-4xl font-bold text-foreground">Loading your account...</h1>
+          <p className="text-foreground">Checking your session.</p>
+        </div>
+      ) : session ? (
         <div className="flex flex-col gap-4 bg-foreground rounded-2xl p-12 mx-auto outlined w-full max-w-2xl">
           <h1 className="text-4xl font-bold ">Your Account</h1>
 
           {/* Change Password */}
           <div className=" p-6 flex flex-col gap-4 outlined ">
             <div className="flex items-center justify-between gap-2">
-              <h2 >Change Password</h2>
+              <h2>Change Password</h2>
               <button onClick={() => setChangePasswordClicked(!changePasswordClicked)} className="!px-4 !py-2 text-sm bg-foreground text-background hover:cursor-pointer">
                 {changePasswordClicked ? "Cancel" : "Change"}
               </button>
@@ -193,7 +221,6 @@ const onSubmitDeleteAccount = async (data) => {
             )}
           </div>
 
-          {/* Subscription */}
           {!isPremiumUser && !isBuyingSubscription && (
             <button onClick={() => setIsBuyingSubscription(true)} className="mx-auto rainbow-transition bg-gradient-to-b from-blue-700 to-violet-600 text-white self-start hover:cursor-pointer">
               Upgrade to Pro
@@ -211,14 +238,17 @@ const onSubmitDeleteAccount = async (data) => {
           <button onClick={async () => {
             await supabase.auth.signOut();
             router.push('/login');
-          }} className="outlined text-foreground  self-start cursor-pointer hover:cursor-pointer mx-auto">Log Out</button>
+          }} className="outlined text-foreground self-start cursor-pointer hover:cursor-pointer mx-auto">
+            Log Out
+          </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-2 bg-background rounded-2xl p-12  mx-auto items-center outlined">
+        <div className="flex flex-col gap-2 bg-background rounded-2xl p-12 mx-auto items-center outlined">
           <h1 className="text-4xl font-bold text-foreground">You must be logged in to view your account.</h1>
           <p className="text-foreground">You will be redirected shortly.</p>
         </div>
       )}
+
     </main>
     </div>
   );
