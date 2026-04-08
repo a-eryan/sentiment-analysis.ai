@@ -39,7 +39,7 @@ export default function SignUp() {
     setResendMessage('');
     
     try {
-      const { error } = await supabase.auth.resendEmailConfirmationLink(email);
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
       if (error) {
         setResendMessage(`Error: ${error.message}`);
       } else {

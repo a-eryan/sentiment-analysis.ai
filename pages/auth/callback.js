@@ -10,22 +10,25 @@ export default function AuthCallback() {
   const [isError, setIsError] = useState(false);
 
   useEffect(() => {
+    if (!router.isReady) return;
+
     const handleEmailVerification = async () => {
       try {
-        // check if we have a valid session (user should be logged in after email link)
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error || !session) {
-          setMessage('Email verification failed or link expired. Please try again.');
-          setIsError(true);
-          console.error('Verification error:', error);
-          setTimeout(() => router.push('/signup'), 3000);
-          return;
+        const { code } = router.query;
+
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            setMessage('Email verification failed or link expired. Please try again.');
+            setIsError(true);
+            setTimeout(() => router.push('/signup'), 3000);
+            return;
+          }
         }
 
         //check if email is confirmed, if not wait and refresh session to get updated user info
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (user?.email_confirmed_at) {
           setMessage('✓ Email verified successfully! Redirecting...');
           setIsError(false);
