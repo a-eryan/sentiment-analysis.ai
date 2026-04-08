@@ -1,15 +1,29 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { useContext } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { AuthContext } from '@/lib/authContext';
+import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
-  const { session, signOut, loading } = useContext(AuthContext);
+  const [session, setSession] = useState(null);
   const router = useRouter();
 
+  useEffect(() => {
+    const fetchSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+    };
+    fetchSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleLogout = async () => {
-    await signOut();
+    await supabase.auth.signOut();
     router.push('/login');
   };
 
@@ -25,9 +39,7 @@ export default function Navbar() {
           </Link>
         </span>
         <ul className="flex space-x-6 text-lg items-center">
-          {loading ? (
-            <li className="text-gray-500">Loading...</li>
-          ) : session && !session.user.is_anonymous ? (
+          {session && !session.user.is_anonymous ? (
             <>
               <li>
                 <Link href="/account" className="hover:underline">
