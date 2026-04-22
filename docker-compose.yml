@@ -25,4 +25,4 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
 
     ports:
-      - "3000:3000"
+      - "80:3000"
