@@ -12,7 +12,7 @@ import Sidebar from '@/components/Sidebar';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-
+export const dynamic = 'force-dynamic'
 export default function Account({ isPremiumUser, subscriptionPrice, userEmail }) {
     //redirect if user is not logged in
     const [session, setSession] = useState(undefined);
