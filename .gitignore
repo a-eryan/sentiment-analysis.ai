@@ -58,3 +58,10 @@ cypress.env.json
 # cypress spec examples
 cypress/e2e/1-getting-started
 cypress/e2e/2-advanced-examples
+
+# Python virtual environments
+ebcli-venv/
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

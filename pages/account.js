@@ -10,8 +10,6 @@ import Stripe from 'stripe';
 import Squares from '@/components/Squares';
 import Sidebar from '@/components/Sidebar';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 
 export default function Account({ isPremiumUser, subscriptionPrice, userEmail }) {
     //redirect if user is not logged in
@@ -256,6 +254,8 @@ const onSubmitDeleteAccount = async (data) => {
 
 
 export async function getServerSideProps({ params, req, res }) { 
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  
   let isPremiumUser = false;
   let userInfo = null;
   let subscriptionPrice = null;
