@@ -10,7 +10,7 @@ import Stripe from 'stripe';
 import Squares from '@/components/Squares';
 import Sidebar from '@/components/Sidebar';
 
-export const dynamic = 'force-dynamic' //remove if build still doesn't run
+
 export default function Account({ isPremiumUser, subscriptionPrice, userEmail }) {
     //redirect if user is not logged in
     const [session, setSession] = useState(undefined);
