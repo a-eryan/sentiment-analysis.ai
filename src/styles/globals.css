@@ -48,11 +48,16 @@ p {
   @apply text-lg;
 }
 button{
-  @apply px-8 py-3 rounded-2xl;
+  @apply py-3 rounded-2xl px-4 lg:px-8;
 }
 
 .outlined {
   @apply rounded-2xl border-foreground border-3 bg-background
+}
+
+.outlined-inner {
+  @apply bg-foreground text-background rounded-2xl;
+  box-shadow: 0 0 0 3px var(--background), 0 0 0 5px var(--foreground);
 }
 
 input {

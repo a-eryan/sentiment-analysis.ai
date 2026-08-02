@@ -1,9 +1,12 @@
 import { useRef, useEffect } from 'react';
 
+const BORDER_COLOR = '#D9D9D9';
+const DARK_MODE_BORDER_COLOR = '#404040'; // 60% less bright than #D9D9D9
+
 const Squares = ({
   direction = 'right',
   speed = 1,
-  borderColor = '#999',
+  borderColor,
   cellWidth = 80,
   cellHeight = 40,
   hoverFillColor = '#222'
@@ -19,6 +22,13 @@ const Squares = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+
+    const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    let activeBorderColor = borderColor || (darkModeQuery.matches ? DARK_MODE_BORDER_COLOR : BORDER_COLOR);
+    const handleColorSchemeChange = (event) => {
+      if (!borderColor) activeBorderColor = event.matches ? DARK_MODE_BORDER_COLOR : BORDER_COLOR;
+    };
+    darkModeQuery.addEventListener('change', handleColorSchemeChange);
 
     const resizeCanvas = () => {
       canvas.width = canvas.offsetWidth;
@@ -52,7 +62,7 @@ const Squares = ({
             ctx.fillRect(cellX, cellY, cellWidth, cellHeight);
           }
 
-          ctx.strokeStyle = borderColor;
+          ctx.strokeStyle = activeBorderColor;
           ctx.strokeRect(cellX, cellY, cellWidth, cellHeight);
         }
       }
@@ -118,6 +128,7 @@ const Squares = ({
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
+      darkModeQuery.removeEventListener('change', handleColorSchemeChange);
     };
   }, [direction, speed, borderColor, hoverFillColor, cellWidth, cellHeight]);
 

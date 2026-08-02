@@ -142,30 +142,30 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
     <div className="fixed inset-0 -z-10 blur-[1.5px]">
 			<Squares speed={0.2} cellWidth={100} cellHeight={40} direction="up" />
 		</div>  
-    <main className="flex-col mx-auto p-6 bg-background rounded-2xl outlined  max-w-7xl my-8">
-      <h1 className="text-2xl font-bold mb-4">{results.file_name} Sentiment Analysis Results</h1>
-    <button onClick={handleDownload} disabled={downloading} className="mx-auto block outlined hover:cursor-pointer">
+    <main className="flex-col mx-8 p-6 bg-background rounded-2xl outlined  max-w-7xl my-8">
+      <h1 className="text-2xl font-bold mb-2">{results.file_name} Sentiment Analysis Results</h1>
+    <button onClick={handleDownload} disabled={downloading} className="mx-auto block outlined-inner hover:cursor-pointer">
       {downloading ? 'Downloading...' : 'Download Results'}
     </button>
     <div className="mt-6">
     </div>
     {previewError && <p className="text-red-600 mt-4">Preview Error: {previewError}</p>}        {previewData && (
           <div className="w-full space-y-4">
-            <h2 className="text-2xl font-semibold">Spreadsheet Preview</h2>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-0">
+              <h2 className="text-2xl font-semibold">Spreadsheet Preview</h2>
+              {/* Sentiment Statistics */}
+              <p className="text-sm text-foreground/60 whitespace-nowrap">
+                <span className="font-semibold text-foreground">Sentiment:</span>{' '}
+                {sentiStatistics.map(([sentiment, percentage], index) => (
+                  <span key={sentiment}>
+                    {index > 0 && ' • '}
+                    {sentiment}: {percentage}
+                  </span>
+                ))}
+              </p>
+            </div>
             <p className="text-gray-600">
-              Showing {previewData.previewData.length} of {previewData.totalRows} rows. 
-            </p>
-            <p>
-            <div className="mb-4">
-              <h3 className="text-xl font-semibold mb-2">Sentiment Statistics:</h3>
-                <ul className="list-disc list-inside">
-                  {sentiStatistics.map(([sentiment, percentage]) => (
-                    <li key={sentiment}>
-                      <strong>{sentiment}:</strong> {percentage}
-                    </li>
-                  ))}  
-                </ul>
-                </div>
+              Showing {previewData.previewData.length} of {previewData.totalRows} rows.
             </p>
             {/* Preview Table */}
             <div className="rounded-2xl overflow-hidden border-2 border-foreground/10">
@@ -206,40 +206,40 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
                   </tbody>
                 </table>
               </div>
-            {/* Sheet Tabs for Excel - Moved to bottom like real Excel */}
-            {previewData.fileType === 'excel' && previewData.availableSheets && previewData.availableSheets.length > 1 && (
-              <div className="border-t-2 border-foreground/10 p-2">
-                <div className="flex space-x-1">
-                  {/*FIX: buttons default to submit when inside a form*/}
-                  {previewData.availableSheets.map((sheet, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => handleSheetChange(sheet)}
-                      className="hover:cursor-pointer"
-                    >
-                      {sheet}
-                    </button> 
-                  ))}
+              {/* Sheet Tabs for Excel - Moved to bottom like real Excel */}
+              {previewData.fileType === 'excel' && previewData.availableSheets && previewData.availableSheets.length > 1 && (
+                <div className="border-t-2 border-foreground/10 p-2">
+                  <div className="flex space-x-1">
+                    {/*FIX: buttons default to submit when inside a form*/}
+                    {previewData.availableSheets.map((sheet, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => handleSheetChange(sheet)}
+                        className="hover:cursor-pointer"
+                      >
+                        {sheet}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-            {previewData.fileType === 'excel' && previewData.availableSheets && (
-              <div className="bg-foreground/5 rounded-lg p-4">
-                <p className="text-sm text-foreground/60">
-                  <strong>Current Sheet:</strong> {previewData.currentSheet}
-                  {previewData.availableSheets.length > 1 && (
-                    <>
-                      {' • '}
-                      <strong>Available Sheets:</strong> {previewData.availableSheets.join(', ')}
-                    </>
-                  )}
-                </p>
-              </div>
-            )}
+              )}
+              {previewData.fileType === 'excel' && previewData.availableSheets && (
+                <div className="bg-foreground/5 rounded-lg p-4">
+                  <p className="text-sm text-foreground/60">
+                    <strong>Current Sheet:</strong> {previewData.currentSheet}
+                    {previewData.availableSheets.length > 1 && (
+                      <>
+                        {' • '}
+                        <strong>Available Sheets:</strong> {previewData.availableSheets.join(', ')}
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        )}    
+        )}
   </main>
   </div>
   

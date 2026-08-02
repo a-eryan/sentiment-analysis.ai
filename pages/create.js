@@ -7,8 +7,42 @@ import { createServerClient } from '@supabase/ssr'
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { getHCaptchaConfig } from '../hcaptcha.config';
 import Sidebar from '@/components/Sidebar';
+import SubmitSentiSheetIcon from '../public/SentiSheetRequest.svg';
+import SentiSheetProcessRequest from '../public/SentiSheetProcessRequest.svg';
+import SentiSheetViewProcessedSentiSheet from '../public/SentiSheetViewProcessedSentiSheet.svg';
+import Speed from '../public/Speed.svg';
+import Intelligence from '../public/Intelligence.svg';
 
 const {siteKey } = getHCaptchaConfig();
+
+function ProgressBar({ value, max }) {
+  return (
+    <div className="flex flex-col justify-center items-center">
+    <div className="flex flex-row items-center gap-32 mt-4">
+      <div className="flex flex-col items-center">
+        <SubmitSentiSheetIcon className="dark:invert"/>
+        <span className="text-2xl font-bold">Create New SentiSheet</span>
+      </div>
+      <div className="flex flex-col items-center">
+        <SentiSheetProcessRequest className="dark:invert"/>
+        <span className="text-2xl font-bold">Processing Request</span>
+      </div>
+      <div className="flex flex-col items-center">
+        <SentiSheetViewProcessedSentiSheet className="dark:invert"/>
+        <span className="text-2xl font-bold">View Results</span>
+      </div>
+    </div>
+  {/*custom progress bar due to CSS issues with <progress> element*/}
+    <div className="mt-2 w-3/5 h-4 bg-foreground rounded-full border">
+      <div
+        className="h-full bg-background rounded-full transition-all"
+        style={{ width: `${(value / max) * 100}%` }}
+      />
+    </div>
+    </div> 
+  );
+}
+
 
 export default function NewSentiSheetWithPreview({ isPremiumUser, isAnonymous }) {
   const { register, handleSubmit, resetField, formState: { errors, isSubmitting, isValid }, setValue, watch } = useForm({
@@ -56,7 +90,9 @@ export default function NewSentiSheetWithPreview({ isPremiumUser, isAnonymous })
     let progress = 0;
     if (previewData) progress++;
     if (watch('sentimentClassification')) progress++;
-    return progress;
+    if (watch('aiModel')) progress++;
+    if (isSubmitting) progress++;
+    return (progress / 3); // Return percentage
   };
 
 
@@ -151,7 +187,7 @@ export default function NewSentiSheetWithPreview({ isPremiumUser, isAnonymous })
       premium: false 
     },
     {
-      name: 'Gemini 2.5 Flash',
+      name: 'Google Gemini 2.5 Flash',
       value: 'gemini-2.5-flash',
       speed: 2,
       intelligence: 2,
@@ -168,28 +204,28 @@ export default function NewSentiSheetWithPreview({ isPremiumUser, isAnonymous })
       name: 'OpenAI GPT-5-nano',
       value: 'gpt-5-nano',
       speed: 3,
-      intelligence: 2,
+      intelligence: 1,
       premium: true
     },
     {
       name: 'OpenAI GPT-5 mini',
       value: 'gpt-5-mini',
-      speed: 4,
-      intelligence: 3,
+      speed: 2,
+      intelligence: 2,
       premium: true
     },
     {
       name: 'OpenAI GPT-5',
       value: 'gpt-5',
-      speed: 5,
-      intelligence: 4,
+      speed: 1,
+      intelligence: 3,
       premium: true
     },
     {
       name: 'Anthropic Claude 4 Sonnet',
       value: 'claude-sonnet-4-20250514',
-      speed: 4,
-      intelligence: 3,
+      speed: 2,
+      intelligence: 2,
       premium: true
     }
   ]
@@ -261,13 +297,13 @@ console.log('isAnonymous:', isAnonymous);
       <Sidebar/>
       <main className="flex-1">
       {!isSubmitting &&
-        <>
-        <h1>Submit SentiSheet Request</h1>
-      <progress value={calculateProgress()} max="2" className="w-full mt-2" /> {/*function is always called per render*/}
+      <>
+      <ProgressBar value={calculateProgress() } max={3} />
+      <h1 className='mt-2'>Submit SentiSheet Request</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-9xl mx-auto p-6">
-        <label className="text-2xl font-medium">Spreadsheet file upload
-          <input 
+        <label className="flex items-center gap-3 text-2xl font-medium">Spreadsheet file upload
+          <input
               {...register("file", {
                 required: "No spreadsheet selected.",
                 onChange: handleFileUpload,
@@ -321,7 +357,7 @@ console.log('isAnonymous:', isAnonymous);
               Showing {previewData.previewData.length} of {previewData.totalRows} rows. Click on a column to select it for sentiment analysis.
             </p>
             {/* Column Selection Input */}
-            <div className="flex items-center space-x-4 bg-foreground/5 p-4 rounded-lg">
+            <div className="flex items-center space-x-4 bg-foreground/5 p-4 outlined">
               <label className="text-lg font-medium">
                 Selected Column:
                 <input
@@ -334,7 +370,7 @@ console.log('isAnonymous:', isAnonymous);
                   type="number"
                   min="1"
                   max={previewData.headers.length}
-                  className="border border-foreground/20 rounded px-3 py-2 w-20 text-center bg-background"
+                  className="border border-foreground/20 rounded text-center bg-background"
                   onChange={handleTextColumnChange}
                 />
               </label>
@@ -349,7 +385,7 @@ console.log('isAnonymous:', isAnonymous);
             </div>
             {errors.textColumn && <span className="text-red-500 text-sm">{errors.textColumn.message}</span>}
             {/* Preview Table */}
-            <div className="rounded-2xl overflow-hidden border-2 border-foreground/10">
+            <div className="rounded-2xl overflow-hidden border-3 border-foreground">
               <div className="overflow-x-auto max-h-96">
                 <table className="min-w-full border-collapse text-left">
                   {/* table header: */}
@@ -439,20 +475,18 @@ console.log('isAnonymous:', isAnonymous);
           <legend className="text-2xl font-semibold py-2">Sentiment Classification</legend>
           
           <div className="space-y-4 ">
-            <label className="flex items-start space-x-3 p-4 outlined hover:bg-gray-50 cursor-pointer">
+            <label className="flex items-start space-x-3 p-4 outlined hover:cursor-pointer">
               <input 
                 {...register("sentimentClassification", { required: "Sentiment classification is required." })}
                 type="radio"
                 value="Basic"
-                className="mt-1"
+                className="mt-2"
               />
-              <div>
+              <div className="flex flex-row items-start space-x-8 ">
                 <p className="font-semibold">Basic Sentiment Classification</p>
-                <div className="flex space-x-4 text-sm text-gray-600 mt-1">
-                  <span>Positive</span>
-                  <span>Neutral</span>
-                  <span>Negative</span>
-                </div>
+                <span className="outlined-inner px-3">Positive</span>
+                <span className="outlined-inner px-3">Neutral</span>
+                <span className="outlined-inner px-3">Negative</span>
               </div>
             </label>
             <label className="flex items-start space-x-3 p-4 outlined hover:bg-gray-50 cursor-pointer">
@@ -460,16 +494,16 @@ console.log('isAnonymous:', isAnonymous);
                 {...register("sentimentClassification", { required: "Sentiment classification is required." })}
                 type="radio"
                 value="Granular"
-                className="mt-1"
+                className="mt-2"
               />
-              <div>
+              <div className="flex flex-row items-start space-x-8">
                 <p className="font-semibold">Granular Sentiment Classification</p>
-                <div className="flex space-x-4 text-sm text-gray-600 mt-1">
-                  <span>Very Positive</span>
-                  <span>Positive</span>
-                  <span>Neutral</span>
-                  <span>Negative</span>
-                  <span>Very Negative</span>
+                <div className="flex flex-row items-start space-x-8">
+                  <span className="outlined-inner px-3">Very Positive</span>
+                  <span className="outlined-inner px-3">Positive</span>
+                  <span className="outlined-inner px-3">Neutral</span>
+                  <span className="outlined-inner px-3">Negative</span>
+                  <span className="outlined-inner px-3">Very Negative</span>
                 </div>
               </div>
             </label>
@@ -478,17 +512,17 @@ console.log('isAnonymous:', isAnonymous);
                 {...register("sentimentClassification", { required: "Sentiment classification is required." })}
                 type="radio"
                 value="Dr.Ekman"
-                className="mt-1"
+                className="mt-2"
               />
-              <div>
+              <div className="flex flex-row items-start space-x-8">
                 <p className="font-semibold">Dr. Ekman&apos;s Six Basic Emotions</p>
-                <div className="flex space-x-4 text-sm text-gray-600 mt-1">
-                  <span>Anger</span>
-                  <span>Disgust</span>
-                  <span>Fear</span>
-                  <span>Happiness</span>
-                  <span>Sadness</span>
-                  <span>Surprise</span>
+                <div className="flex flex-row items-start space-x-8">
+                  <span className="outlined-inner px-6">Anger</span>
+                  <span className="outlined-inner px-6">Disgust</span>
+                  <span className="outlined-inner px-6">Fear</span>
+                  <span className="outlined-inner px-6">Happiness</span>
+                  <span className="outlined-inner px-6">Sadness</span>
+                  <span className="outlined-inner px-6">Surprise</span>
                 </div>
               </div>
             </label> 
@@ -497,7 +531,7 @@ console.log('isAnonymous:', isAnonymous);
                 {...register("sentimentClassification", { required: "Sentiment classification is required." })}
                 type="radio"
                 value="Custom"
-                className="mt-1"
+                className="mt-2"
                 disabled={!isPremiumUser}
               />
               <div className="w-full">
@@ -542,7 +576,7 @@ console.log('isAnonymous:', isAnonymous);
         </fieldset>
         <fieldset className="w-full">
         <legend className="text-2xl font-semibold py-2">AI Model</legend>
-        <table className="w-full text-left border-collapse border space-x-3 p-4 outlined">
+        <table className="w-full text-left border-separate border-spacing-0 p-4 outlined">
           <thead>
             <tr className="">
               <th className="p-3">Model name</th>
@@ -554,7 +588,7 @@ console.log('isAnonymous:', isAnonymous);
             {AIModels.map((model, index) => (
               <tr key={index} className="hover:bg-gray-50 cursor-pointer">
                 <td>
-                  <label className="flex items-start space-x-3 p-4 cursor-pointer">
+                  <label className={`flex items-start space-x-3 p-4 cursor-pointer` + (model.premium && isPremiumUser ? '' : 'bg-opacity-60')}>
                     <input
                       {...register("aiModel", { required: "AI model is required." })}
                       type="radio"
@@ -566,14 +600,24 @@ console.log('isAnonymous:', isAnonymous);
                   </label>
                 </td>
                 <td>
-                  <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-sm font-medium rounded">
-                    {model.speed}
-                  </span>
+                  <div className="flex items-center space-x-3">
+                    {Array.from({ length: model.speed }, (_, i) => (
+                      <Speed key={i} className=""/>
+                    ))}
+                    {Array.from({ length: 3 - model.speed }, (_, i) => (
+                      <Speed key={i} className="invert"/>
+                    ))}
+                  </div>
                 </td>
                 <td>
-                  <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded">
-                    {model.intelligence}
-                  </span>
+                  <div className="flex items-center space-x-3">
+                    {Array.from({ length: model.intelligence }, (_, i) => (
+                      <Intelligence key={i} className=""/>
+                    ))}
+                    {Array.from({ length: 3 - model.intelligence }, (_, i) => (
+                      <Intelligence key={i} className="invert"/>
+                    ))}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -581,31 +625,37 @@ console.log('isAnonymous:', isAnonymous);
         </table>
         {errors.aiModel && <span className="text-red-500 text-sm">{errors.aiModel.message}</span>}
       </fieldset>
-        <button
-          type="submit"
-          disabled={isSubmitting || !isValid}
-          className={`px-8 py-3 rounded-lg text-xl font-semibold transition-colors ${
-            (isSubmitting || !isValid)
-              ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-              : 'bg-blue-500 text-white hover:bg-blue-600'
-          }`}
-        >
-          {isSubmitting ? 'Processing...' : 'Analyze Sentiment'}
-        </button>
+
           {isAnonymous && (
+            <div className="mt-4">
             <HCaptcha
               sitekey={siteKey}
               onVerify={token => setCaptchaToken(token)}
               ref={captcha}
             />
+            </div>
           )}
 
         {submitError && <span className="text-red-500 text-sm">{submitError}</span>}
+        <div className="flex flex-row items-center justify-center"> {/*spacing*/}
+          <button
+            type="submit"
+            disabled={isSubmitting || !isValid}
+            className={`px-12 py-3 rounded-lg text-xl font-semibold outlined-inner mt-4 ${
+              (isSubmitting || !isValid)
+                ? 'opacity-60  cursor-not-allowed'
+                : 'outlined cursor-pointer'
+            }`}
+          >
+            {isSubmitting ? 'Processing...' : 'Submit SentiSheet Request'}
+          </button>
+        </div>        
       </form>
     </>
   }
       {isSubmitting && (
         <>
+          <ProgressBar value={1.5} max={3} />    
           <h1 className="text-center">Processing request</h1>
           <p> We received your SentiSheet request and are currently processing your request right now. </p>
           <p> Estimated processing time: {timeEstimation(previewData)} seconds </p>
