@@ -13,8 +13,7 @@ describe('Sentiment Analysis Upload Flow for Logged-in Users', () => {
       cy.contains('Selected for analysis', { timeout: 10000 }).should('be.visible')
       cy.contains('Basic Sentiment Classification').click()
       cy.contains('Google Gemini 2.5 Flash-Lite').click()
-      cy.wait(300) // ensure captcha callback has fired
-      cy.contains('Analyze Sentiment').click()
+      cy.get('button').contains('Submit SentiSheet Request').click()
       cy.contains('We received your SentiSheet request and are currently processing your request right now.', { timeout: 20000 }).should('be.visible')
       cy.contains('Sentiment Analysis Results', { timeout: 20000 }).should('be.visible')
     })
