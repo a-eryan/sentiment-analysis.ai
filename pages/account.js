@@ -157,7 +157,7 @@ const onSubmitDeleteAccount = async (data) => {
   return (
     <div className="flex h-screen overflow-hidden">
     <Sidebar />
-    <main className="relative flex-1 p-8 flex flex-col gap-6 overflow-y-auto">
+    <main className="relative flex-1 min-w-0 p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto">
         <div className="fixed inset-0 -z-10 blur-[1.5px]">
           <Squares
             speed={0.2}
@@ -169,17 +169,17 @@ const onSubmitDeleteAccount = async (data) => {
       
       
       {isAuthLoading ? (
-        <div className="flex flex-col gap-2 bg-background rounded-2xl p-12 mx-auto items-center outlined">
-          <h1 className="text-4xl font-bold text-foreground">Loading your account...</h1>
+        <div className="flex flex-col gap-2 bg-background rounded-2xl p-6 sm:p-12 mx-auto items-center outlined">
+          <h1 className="text-2xl sm:text-4xl font-bold text-foreground text-center">Loading your account...</h1>
           <p className="text-foreground">Checking your session.</p>
         </div>
       ) : session ? (
-        <div className="flex flex-col gap-4 bg-foreground rounded-2xl p-12 mx-auto outlined w-full max-w-2xl">
-          <h1 className="text-4xl font-bold ">Your Account</h1>
+        <div className="flex flex-col gap-4 bg-foreground rounded-2xl p-4 sm:p-12 mx-auto outlined w-full max-w-2xl">
+          <h1 className="text-2xl sm:text-4xl font-bold ">Your Account</h1>
 
           {/* Change Password */}
-          <div className=" p-6 flex flex-col gap-4 outlined ">
-            <div className="flex items-center justify-between gap-2">
+          <div className=" p-4 sm:p-6 flex flex-col gap-4 outlined ">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h2>Change Password</h2>
               <button onClick={() => setChangePasswordClicked(!changePasswordClicked)} className="!px-4 !py-2 text-sm bg-foreground text-background hover:cursor-pointer">
                 {changePasswordClicked ? "Cancel" : "Change"}
@@ -200,8 +200,8 @@ const onSubmitDeleteAccount = async (data) => {
           </div>
 
           {/* Delete Account */}
-          <div className="rounded-2xl border-2 border-red-500/20 p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-2">
+          <div className="rounded-2xl border-2 border-red-500/20 p-4 sm:p-6 flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-red-500">Delete Account</h2>
               <button onClick={() => setDeleteAccountClicked(!deleteAccountClicked)} className="!px-4 !py-2 text-sm bg-red-500 text-white hover:cursor-pointer">
                 {deleteAccountClicked ? "Cancel" : "Delete"}
@@ -225,7 +225,7 @@ const onSubmitDeleteAccount = async (data) => {
             </button>
           )}
           {isBuyingSubscription && !isPremiumUser && (
-            <div className="rounded-2xl border-2 border-foreground/10 p-6 flex flex-col gap-4 items-center text-background text-center">
+            <div className="rounded-2xl border-2 border-foreground/10 p-4 sm:p-6 flex flex-col gap-4 items-center text-background text-center">
               <h2>You&apos;re one step away from unlocking all of sentiment-analysis.ai.</h2>
               <p className="text-center text-background">Upgrade to Pro for more features and insights.</p>
               <CheckoutForm userEmail={userEmail} />
@@ -241,8 +241,8 @@ const onSubmitDeleteAccount = async (data) => {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-2 bg-background rounded-2xl p-12 mx-auto items-center outlined">
-          <h1 className="text-4xl font-bold text-foreground">You must be logged in to view your account.</h1>
+        <div className="flex flex-col gap-2 bg-background rounded-2xl p-6 sm:p-12 mx-auto items-center outlined">
+          <h1 className="text-2xl sm:text-4xl font-bold text-foreground text-center">You must be logged in to view your account.</h1>
           <p className="text-foreground">You will be redirected shortly.</p>
         </div>
       )}

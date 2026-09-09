@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
+import { getAuthErrorMessage } from '@/lib/authErrors';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
@@ -8,8 +9,9 @@ import Squares from '@/components/Squares';
 
 export default function SignUp() {
   const router = useRouter();
+  const [signupError, setSignupError] = useState('');
   const { register, handleSubmit, watch, formState: { errors, isSubmitSuccessful } } = useForm();
-  
+
   //watching both fields in real-time: 
   const password = watch('password', '');
   const confirmPassword = watch('confirmPassword', '');
@@ -26,10 +28,12 @@ export default function SignUp() {
     }, [router]);
 
   const onSubmit = async (data) => {
+    setSignupError('');
     const { email, password } = data;
     const { user, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       console.error('Error signing up:', error);
+      setSignupError(getAuthErrorMessage(error));
     } else {
       console.log('User signed up successfully:', user);
       setTimeout(() => {
@@ -59,6 +63,11 @@ export default function SignUp() {
     <div className="flex-1 mb-12 border max-w-4xl mx-auto p-6 mt-12 rounded outlined">
       <h1>Sign Up</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 justify-center items-center mt-8">
+        {signupError && (
+            <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
+                <p className="text-red-600">{signupError}</p>
+            </div>
+        )}
         <label className="flex flex-col gap-1">
           Email
           <input className="outlined px-2" type="email" {...register('email', {
@@ -118,13 +127,13 @@ export default function SignUp() {
 
         <button 
           type="submit" 
-          disabled={!allRequirementsMet || !passwordsMatch || isSubmitSuccessful}
+          disabled={!allRequirementsMet || !passwordsMatch || (isSubmitSuccessful && !signupError)}
           className={`bg-foreground text-background ${(allRequirementsMet && passwordsMatch) ? 'opacity-100 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
         >
           Sign Up
         </button>
       </form>
-      {isSubmitSuccessful && <p>Sign up successful! If this is your first time signing up with this email, 
+      {isSubmitSuccessful && !signupError && <p>Sign up successful! If this is your first time signing up with this email,
         a verification email has been sent. You will be redirected to log in shortly.</p>}
     </div>
   </>    

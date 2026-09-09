@@ -38,43 +38,46 @@ body {
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
 
-h1 {
-  @apply text-6xl font-bold text-center;
-}
-h2 {
-  @apply text-3xl;
-}
-p {
-  @apply text-lg;
-}
-button{
-  @apply py-3 rounded-2xl px-4 lg:px-8;
-}
-
-.outlined {
-  @apply rounded-2xl border-foreground border-3 bg-background
-}
-
-.outlined-inner {
-  @apply bg-foreground text-background rounded-2xl;
-  box-shadow: 0 0 0 3px var(--background), 0 0 0 5px var(--foreground);
+@layer base {
+  h1 {
+    @apply text-6xl font-bold text-center;
+  }
+  h2 {
+    @apply text-3xl;
+  }
+  p {
+    @apply text-lg;
+  }
+  button{
+    @apply py-3 rounded-2xl px-4 lg:px-8;
+  }
+  input {
+    @apply px-2 py-1 rounded-2xl border-foreground border-3 bg-background
+  }
 }
 
-input {
-  @apply px-2 py-1 rounded-2xl border-foreground border-3 bg-background
-}
+@layer components {
+  .outlined {
+    @apply rounded-2xl border-foreground border-3 bg-background
+  }
 
-.text-rainbow-mask {
-  @apply bg-gradient-to-b from-blue-700 to-violet-600 text-transparent bg-clip-text
+  .outlined-inner {
+    @apply bg-foreground text-background rounded-2xl;
+    box-shadow: 0 0 0 3px var(--background), 0 0 0 5px var(--foreground);
+  }
+
+  .text-rainbow-mask {
+    @apply bg-gradient-to-b from-blue-700 to-violet-600 text-transparent bg-clip-text
+  }
+
+  .rainbow-transition {
+    animation: rainbow-hue 45s linear infinite;
+  }
 }
 
 @keyframes rainbow-hue {
   0% { filter: hue-rotate(0deg); }
   100% { filter: hue-rotate(360deg); }
-}
-
-.rainbow-transition {
-  animation: rainbow-hue 45s linear infinite;
 }
 
 input:-webkit-autofill,

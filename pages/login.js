@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { getAuthErrorMessage } from '@/lib/authErrors';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
 import { useEffect, useState } from 'react';
@@ -34,7 +35,7 @@ export default function LogIn() {
       
       if (error) {
           console.error('Error logging in:', error);
-          setLoginError(error.message);
+          setLoginError(getAuthErrorMessage(error));
       } else {
           console.log('User logged in successfully:', authData.user);
           router.push('/create');

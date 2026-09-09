@@ -56,23 +56,31 @@ export default function Sidebar() {
   }, []);
 
   return (
-    <aside className={`bg-background border-r-3 border-foreground min-h-screen p-4 flex flex-col shrink-0 transition-[width] duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-80'}`}>
+    <>
+      {/* On mobile the sidebar is fixed, so this spacer keeps the collapsed rail's width in the page flow */}
+      <div className="w-16 shrink-0 md:hidden" aria-hidden="true" />
+      <div
+        className={`fixed inset-0 z-30 bg-black/50 md:hidden transition-opacity duration-300 ease-in-out ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        aria-hidden="true"
+        onClick={() => setIsCollapsed(true)}
+      />
+      <aside className={`fixed inset-y-0 left-0 z-40 md:static md:z-auto overflow-y-auto overflow-x-hidden bg-background border-r-3 border-foreground min-h-screen self-stretch p-4 flex flex-col shrink-0 transition-[width] duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-80'}`}>
       <nav className="flex flex-col flex-1">
         <ul className="flex flex-col gap-2">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`!p-0 !m-0 mb-4 rounded-full w-8 h-8 flex items-center justify-center hover:bg-foreground/10 ${!isCollapsed ? 'self-end' : ''}`}
+            className="!p-0 !m-0 mb-4 rounded-full w-8 h-8 flex items-center justify-center hover:bg-foreground/10"
           >
             <ExpandMenu className={`transition-transform duration-300 ease-in-out [&_path]:fill-foreground hover:cursor-pointer ${isCollapsed ? 'rotate-180' : 'rotate-0'}`} />
           </button>
 
           <Link
             href="/create"
-            className="p-2 rounded-2xl hover:bg-foreground/10 transition-colors flex items-center justify-center gap-2"
+            className={`p-2 rounded-2xl hover:bg-foreground/10 transition-colors flex items-center gap-2 ${isCollapsed ? 'justify-center' : ''}`}
             title="Create New SentiSheet"
           >
             <div className={`grid transition-[grid-template-columns] duration-300 ease-in-out ${isCollapsed ? 'grid-cols-[0fr]' : 'grid-cols-[1fr]'}`}>
-              <span className="overflow-hidden whitespace-nowrap">New SentiSheet</span>
+              <span className={`overflow-hidden whitespace-nowrap transition-opacity duration-300 ease-in-out ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>New SentiSheet</span>
             </div>
             <Create className="shrink-0 [&_path]:from-blue-700 to-violet-600 rainbow-transition" />
           </Link>
@@ -85,7 +93,7 @@ export default function Sidebar() {
                 title={sheet.file_name || 'Untitled'}
               >
                 <div className={`grid transition-[grid-template-columns] duration-300 ease-in-out ${isCollapsed ? 'grid-cols-[0fr]' : 'grid-cols-[1fr]'}`}>
-                  <div className="overflow-hidden">
+                  <div className={`overflow-hidden transition-opacity duration-300 ease-in-out ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>
                     <span className="text-sm font-medium truncate block">
                       {sheet.file_name?.replace(/^SentiSheet-\s*/i, '') || 'Untitled'}
                     </span>
@@ -104,15 +112,16 @@ export default function Sidebar() {
 
         <Link
           href={`/${isAnonymous ? 'login' : 'account'}`}
-          className="p-2 rounded-2xl hover:bg-foreground/10 transition-colors flex items-center justify-center gap-2"
+          className={`p-2 rounded-2xl hover:bg-foreground/10 transition-colors flex items-center gap-2 ${isCollapsed ? 'justify-center' : ''}`}
           title={isAnonymous ? 'You are a guest. Please log in for further access.' : 'My Account'}
         >
           <div className={`grid transition-[grid-template-columns] duration-300 ease-in-out ${isCollapsed ? 'grid-cols-[0fr]' : 'grid-cols-[1fr]'}`}>
-            <span className="overflow-hidden whitespace-nowrap">{isAnonymous ? 'Log In' : 'My Account'}</span>
+            <span className={`overflow-hidden whitespace-nowrap transition-opacity duration-300 ease-in-out ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>{isAnonymous ? 'Log In' : 'My Account'}</span>
           </div>
           <User className="shrink-0 [&_path]:fill-foreground" />
         </Link>
       </nav>
-    </aside>
+      </aside>
+    </>
   );
 }

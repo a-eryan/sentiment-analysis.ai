@@ -17,29 +17,32 @@ const {siteKey } = getHCaptchaConfig();
 
 function ProgressBar({ value, max }) {
   return (
-    <div className="flex flex-col justify-center items-center">
-    <div className="flex flex-row items-center gap-32 mt-4">
-      <div className="flex flex-col items-center">
-        <SubmitSentiSheetIcon className="dark:invert"/>
-        <span className="text-2xl font-bold">Create New SentiSheet</span>
-      </div>
-      <div className="flex flex-col items-center">
-        <SentiSheetProcessRequest className="dark:invert"/>
-        <span className="text-2xl font-bold">Processing Request</span>
-      </div>
-      <div className="flex flex-col items-center">
-        <SentiSheetViewProcessedSentiSheet className="dark:invert"/>
-        <span className="text-2xl font-bold">View Results</span>
+    <div className="flex flex-col justify-center items-center px-4">
+      {/* shrink-wrapped column so the progress bar matches the icon row's width */}
+      <div className="flex flex-col items-center mt-4">
+        <div className="flex flex-row items-center gap-4 sm:gap-16 lg:gap-32">
+          <div className="flex flex-col items-center">
+            <SubmitSentiSheetIcon className="dark:invert w-8 h-8 sm:w-auto sm:h-auto"/>
+            <span className="text-xs sm:text-lg lg:text-2xl font-bold text-center">Create New SentiSheet</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <SentiSheetProcessRequest className="dark:invert w-8 h-8 sm:w-auto sm:h-auto"/>
+            <span className="text-xs sm:text-lg lg:text-2xl font-bold text-center">Processing Request</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <SentiSheetViewProcessedSentiSheet className="dark:invert w-8 h-8 sm:w-auto sm:h-auto"/>
+            <span className="text-xs sm:text-lg lg:text-2xl font-bold text-center">View Results</span>
+          </div>
+        </div>
+      {/*custom progress bar due to CSS issues with <progress> element*/}
+        <div className="mt-2 self-stretch h-4 bg-foreground rounded-full border">
+          <div
+            className="h-full bg-background rounded-full transition-all"
+            style={{ width: `${(value / max) * 100}%` }}
+          />
+        </div>
       </div>
     </div>
-  {/*custom progress bar due to CSS issues with <progress> element*/}
-    <div className="mt-2 w-3/5 h-4 bg-foreground rounded-full border">
-      <div
-        className="h-full bg-background rounded-full transition-all"
-        style={{ width: `${(value / max) * 100}%` }}
-      />
-    </div>
-    </div> 
   );
 }
 
@@ -293,16 +296,16 @@ const timeEstimation = (previewData) => {
 
 console.log('isAnonymous:', isAnonymous);
   return (
-    <div className="flex">
+    <div className="flex flex-1">
       <Sidebar/>
-      <main className="flex-1">
+      <main className="flex-1 min-w-0">
       {!isSubmitting &&
       <>
       <ProgressBar value={calculateProgress() } max={3} />
-      <h1 className='mt-2'>Submit SentiSheet Request</h1>
+      <h1 className='mt-2 text-3xl sm:text-5xl lg:text-6xl'>Submit SentiSheet Request</h1>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-9xl mx-auto p-6">
-        <label className="flex items-center gap-3 text-2xl font-medium">Spreadsheet file upload
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-9xl mx-auto p-4 sm:p-6">
+        <label className="flex flex-wrap items-center gap-3 text-lg sm:text-2xl font-medium">Spreadsheet file upload
           <input
               {...register("file", {
                 required: "No spreadsheet selected.",
@@ -332,6 +335,7 @@ console.log('isAnonymous:', isAnonymous);
               })}
               type="file"
               accept=".xlsx, .xls, .csv"
+              className="min-w-0 max-w-full"
             />
         </label>
         {previewError && <span className="text-red-500 text-sm">{previewError}</span>}
@@ -357,7 +361,7 @@ console.log('isAnonymous:', isAnonymous);
               Showing {previewData.previewData.length} of {previewData.totalRows} rows. Click on a column to select it for sentiment analysis.
             </p>
             {/* Column Selection Input */}
-            <div className="flex items-center space-x-4 bg-foreground/5 p-4 outlined">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-foreground/5 p-4 outlined">
               <label className="text-lg font-medium">
                 Selected Column:
                 <input
@@ -471,7 +475,7 @@ console.log('isAnonymous:', isAnonymous);
           </div>
         )}
         {/* Sentiment Classification - Always visible */}
-        <fieldset className="w-full">
+        <fieldset className="w-full min-w-0">
           <legend className="text-2xl font-semibold py-2">Sentiment Classification</legend>
           
           <div className="space-y-4 ">
@@ -482,11 +486,13 @@ console.log('isAnonymous:', isAnonymous);
                 value="Basic"
                 className="mt-2"
               />
-              <div className="flex flex-row items-start space-x-8 ">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-8">
                 <p className="font-semibold">Basic Sentiment Classification</p>
-                <span className="outlined-inner px-3">Positive</span>
-                <span className="outlined-inner px-3">Neutral</span>
-                <span className="outlined-inner px-3">Negative</span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="outlined-inner px-3">Positive</span>
+                  <span className="outlined-inner px-3">Neutral</span>
+                  <span className="outlined-inner px-3">Negative</span>
+                </div>
               </div>
             </label>
             <label className="flex items-start space-x-3 p-4 outlined hover:bg-gray-50 cursor-pointer">
@@ -496,9 +502,9 @@ console.log('isAnonymous:', isAnonymous);
                 value="Granular"
                 className="mt-2"
               />
-              <div className="flex flex-row items-start space-x-8">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-8">
                 <p className="font-semibold">Granular Sentiment Classification</p>
-                <div className="flex flex-row items-start space-x-8">
+                <div className="flex flex-wrap gap-2">
                   <span className="outlined-inner px-3">Very Positive</span>
                   <span className="outlined-inner px-3">Positive</span>
                   <span className="outlined-inner px-3">Neutral</span>
@@ -514,9 +520,9 @@ console.log('isAnonymous:', isAnonymous);
                 value="Dr.Ekman"
                 className="mt-2"
               />
-              <div className="flex flex-row items-start space-x-8">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-8">
                 <p className="font-semibold">Dr. Ekman&apos;s Six Basic Emotions</p>
-                <div className="flex flex-row items-start space-x-8">
+                <div className="flex flex-wrap gap-2">
                   <span className="outlined-inner px-6">Anger</span>
                   <span className="outlined-inner px-6">Disgust</span>
                   <span className="outlined-inner px-6">Fear</span>
@@ -564,7 +570,7 @@ console.log('isAnonymous:', isAnonymous);
                   className="border border-gray-300 rounded px-3 py-2 mt-2 w-full"
                 />
                 {errors.customSentiments && <span className="text-red-500 text-sm block mt-1">{errors.customSentiments.message}</span>}
-                <div className="flex space-x-4 text-sm text-gray-600 mt-1">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 mt-1">
                   {watch("customSentiments")?.split(',').map((sentiment, index) => (
                     <span key={index}>{sentiment.trim()}</span>
                   ))}
@@ -574,9 +580,10 @@ console.log('isAnonymous:', isAnonymous);
           </div>
           {errors.sentimentClassification && <span className="text-red-500 text-sm">{errors.sentimentClassification.message}</span>}
         </fieldset>
-        <fieldset className="w-full">
+        <fieldset className="w-full min-w-0">
         <legend className="text-2xl font-semibold py-2">AI Model</legend>
-        <table className="w-full text-left border-separate border-spacing-0 p-4 outlined">
+        <div className="rounded-2xl border-3 border-foreground bg-background overflow-x-auto">
+        <table className="w-full min-w-max text-left border-separate border-spacing-0 p-4">
           <thead>
             <tr className="">
               <th className="p-3">Model name</th>
@@ -623,6 +630,7 @@ console.log('isAnonymous:', isAnonymous);
             ))}
           </tbody>
         </table>
+        </div>
         {errors.aiModel && <span className="text-red-500 text-sm">{errors.aiModel.message}</span>}
       </fieldset>
 
@@ -641,7 +649,7 @@ console.log('isAnonymous:', isAnonymous);
           <button
             type="submit"
             disabled={isSubmitting || !isValid}
-            className={`px-12 py-3 rounded-lg text-xl font-semibold outlined-inner mt-4 ${
+            className={`px-6 sm:px-12 py-3 rounded-lg text-lg sm:text-xl font-semibold outlined-inner mt-4 ${
               (isSubmitting || !isValid)
                 ? 'opacity-60  cursor-not-allowed'
                 : 'outlined cursor-pointer'
@@ -656,9 +664,9 @@ console.log('isAnonymous:', isAnonymous);
       {isSubmitting && (
         <>
           <ProgressBar value={1.5} max={3} />    
-          <h1 className="text-center">Processing request</h1>
-          <p> We received your SentiSheet request and are currently processing your request right now. </p>
-          <p> Estimated processing time: {timeEstimation(previewData)} seconds </p>
+          <h1 className="text-center text-3xl sm:text-5xl lg:text-6xl px-4">Processing request</h1>
+          <p className="text-center px-4"> We received your SentiSheet request and are currently processing your request right now. </p>
+          <p className="text-center px-4"> Estimated processing time: {timeEstimation(previewData)} seconds </p>
         </>
       )}
       </main>

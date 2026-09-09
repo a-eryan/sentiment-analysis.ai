@@ -137,24 +137,23 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
   }
   let sentiStatistics = Object.entries(sentimentStatistics(results.analysis_results.sentiments)); //object to an array of [key, value] pairs to map over an array
   return (
-    <div className="flex">
+    <div className="flex flex-1">
       <Sidebar/>
     <div className="fixed inset-0 -z-10 blur-[1.5px]">
 			<Squares speed={0.2} cellWidth={100} cellHeight={40} direction="up" />
 		</div>  
-    <main className="flex-col mx-8 p-6 bg-background rounded-2xl outlined  max-w-7xl my-8">
+    <main className="flex-1 min-w-0 mx-2 sm:mx-8 p-4 sm:p-6 bg-background rounded-2xl outlined max-w-7xl my-4 sm:my-8">
       <h1 className="text-2xl font-bold mb-2">{results.file_name} Sentiment Analysis Results</h1>
     <button onClick={handleDownload} disabled={downloading} className="mx-auto block outlined-inner hover:cursor-pointer">
       {downloading ? 'Downloading...' : 'Download Results'}
     </button>
-    <div className="mt-6">
-    </div>
-    {previewError && <p className="text-red-600 mt-4">Preview Error: {previewError}</p>}        {previewData && (
+    {previewError && <p className="text-red-600 mt-4">Preview Error: {previewError}</p>}
+    {previewData && (
           <div className="w-full space-y-4">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-0">
               <h2 className="text-2xl font-semibold">Spreadsheet Preview</h2>
               {/* Sentiment Statistics */}
-              <p className="text-sm text-foreground/60 whitespace-nowrap">
+              <p className="text-sm text-foreground/60 whitespace-normal sm:whitespace-nowrap">
                 <span className="font-semibold text-foreground">Sentiment:</span>{' '}
                 {sentiStatistics.map(([sentiment, percentage], index) => (
                   <span key={sentiment}>
@@ -209,7 +208,7 @@ export default function SentisheetResults({ results, error, sentiSheetLinks }) {
               {/* Sheet Tabs for Excel - Moved to bottom like real Excel */}
               {previewData.fileType === 'excel' && previewData.availableSheets && previewData.availableSheets.length > 1 && (
                 <div className="border-t-2 border-foreground/10 p-2">
-                  <div className="flex space-x-1">
+                  <div className="flex flex-wrap gap-1">
                     {/*FIX: buttons default to submit when inside a form*/}
                     {previewData.availableSheets.map((sheet, index) => (
                       <button
